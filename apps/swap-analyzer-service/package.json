@@ -1,0 +1,33 @@
+{
+  "name": "swap-analyzer-service",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js"
+  },
+  "dependencies": {
+    "@x402/express": "~2.1.0",
+    "@x402/svm": "~2.1.0",
+    "@x402/core": "~2.1.0",
+    "@orca-so/whirlpools": "^4.0.0",
+    "@orca-so/whirlpools-client": "^5.0.0",
+    "@solana/kit": "^2.1.1",
+    "express": "^4.21.0",
+    "express-rate-limit": "^7.4.0",
+    "zod": "^3.23.8",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "ws": "^8.18.0",
+    "nanoid": "^5.0.7"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5",
+    "@types/express": "^5.0.0",
+    "@types/cors": "^2.8.17",
+    "@types/node": "^22.0.0",
+    "@types/ws": "^8.5.13",
+    "tsx": "^4.19.0"
+  }
+}

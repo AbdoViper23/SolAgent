@@ -1,0 +1,38 @@
+{
+  "name": "solana-trading-agent-mcp",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "MCP server for the Solana AI Trading Agent — deposit, swap, quote, and price tools",
+  "bin": { "solana-trading-agent-mcp": "dist/index.js" },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc && shx chmod +x dist/index.js",
+    "dev": "tsx src/index.ts",
+    "prepare": "npm run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@workspace/sdk": "workspace:*",
+    "@workspace/x402-client": "workspace:*",
+    "@workspace/idl": "workspace:*",
+    "@coral-xyz/anchor": "^0.31.1",
+    "@solana/web3.js": "^1.95.0",
+    "@solana/spl-token": "^0.4.9",
+    "@orca-so/whirlpools": "^4.0.0",
+    "@solana/kit": "^2.1.1",
+    "@x402/axios": "latest",
+    "@x402/svm": ">=2.6.0",
+    "@scure/base": "^1.2.6",
+    "axios": "^1.13.0",
+    "zod": "^3.23.8",
+    "dotenv": "^16.4.5",
+    "shx": "^0.3.4",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5",
+    "@types/node": "^22.0.0",
+    "@types/ws": "^8.5.13",
+    "tsx": "^4.19.0"
+  }
+}

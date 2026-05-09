@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"command -v docker && docker --version 2>&1\",\"description\":\"Check docker availability\"}",
+  "error": "Exit code 1",
+  "timestamp": "2026-05-09T12:12:52.394Z",
+  "retry_count": 1
+}

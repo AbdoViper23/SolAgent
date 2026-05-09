@@ -1,0 +1,27 @@
+{
+  "name": "oracle-service",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js"
+  },
+  "dependencies": {
+    "@x402/express": "latest",
+    "@x402/svm": ">=2.6.0",
+    "express": "^4.21.0",
+    "express-rate-limit": "^7.4.0",
+    "axios": "^1.13.0",
+    "zod": "^3.23.8",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5",
+    "@types/express": "^5.0.0",
+    "@types/cors": "^2.8.17",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"cat /home/AbdoViper/Projects/solana/dev3pack_hack/node_modules/.pnpm/@x402+svm@2.11.0_*/node_modules/@x402/svm/package.json 2>/dev/null | head -1 | python3 -c \\\"import sys, json; d=json.lo...",
+  "error": "Exit code 1\nTraceback (most recent call last):\n  File \"<string>\", line 1, in <module>\n    import sys, json; d=json.load(sys.stdin); print(list(d.get('exports', {}).keys()))\n                        ~~~~~~~~~^^^^^^^^^^^\n  File \"/usr/lib/python3.13/json/__init__.py\", line 293, in load\n    return loads(fp.read(),\n        cls=cls, object_hook=object_hook,\n        parse_float=parse_float, parse_int=parse_int,\n        parse_constant=parse_constant, object_pairs_hook=object_pairs_hook, **kw)\n  File \"/us...",
+  "timestamp": "2026-05-09T10:23:46.492Z",
+  "retry_count": 1
+}

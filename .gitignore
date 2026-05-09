@@ -1,0 +1,16 @@
+node_modules/
+.pnpm-store/
+dist/
+.next/
+target/
+.anchor/
+test-ledger/
+*.js.map
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+.DS_Store
+.vscode/
+.idea/

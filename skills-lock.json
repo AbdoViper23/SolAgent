@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "skills": {
+    "orca": {
+      "source": "sendaifun/skills",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/orca/SKILL.md",
+      "computedHash": "94c27694e9204ef46bab79b83764a501b24f84305dd6f0bf6ea7e85b60f1e5e8"
+    },
+    "pyth": {
+      "source": "sendaifun/skills",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/pyth/SKILL.md",
+      "computedHash": "d65469f7d0ece9cdbac3841e48c6a27ab59a571212240d5deaa157bef330ea12"
+    },
+    "solana-anchor-claude-skill": {
+      "source": "quiknode-labs/solana-anchor-claude-skill",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "90557d194221d17d40d5b5b2c83e0a4341dc0272cce251022be06aa5134d39c3"
+    },
+    "solana-dev": {
+      "source": "solana-foundation/solana-dev-skill",
+      "sourceType": "github",
+      "skillPath": "skill/SKILL.md",
+      "computedHash": "27419a2b51070cdd9c3653c8ba3789ab12cdc09cce1383c4fdedc979cf7d15b6"
+    }
+  }
+}

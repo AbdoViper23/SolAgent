@@ -1,0 +1,203 @@
+import type { Idl } from "@coral-xyz/anchor";
+
+export type TradingVault = {
+  address: "YourVaultProgramId1111111111111111111111111";
+  metadata: {
+    name: "trading_vault";
+    version: "0.1.0";
+    spec: "0.1.0";
+    description: "Solana AI Trading Agent vault program";
+  };
+  instructions: [
+    {
+      name: "init_vault";
+      discriminator: [77, 79, 18, 168, 133, 66, 235, 197];
+      accounts: [
+        { name: "user"; writable: true; signer: true },
+        { name: "vault"; writable: true; pda: object },
+        { name: "system_program" }
+      ];
+      args: [
+        { name: "daily_limit"; type: "u64" },
+        { name: "slippage_bps"; type: "u16" }
+      ];
+    },
+    {
+      name: "deposit";
+      discriminator: [242, 35, 198, 137, 82, 225, 242, 182];
+      accounts: [
+        { name: "user"; writable: true; signer: true },
+        { name: "vault"; writable: true; pda: object },
+        { name: "mint" },
+        { name: "user_ata"; writable: true },
+        { name: "vault_ata"; writable: true },
+        { name: "token_program" },
+        { name: "associated_token_program" },
+        { name: "system_program" }
+      ];
+      args: [{ name: "amount"; type: "u64" }];
+    },
+    {
+      name: "withdraw";
+      discriminator: [183, 18, 70, 156, 148, 109, 161, 34];
+      accounts: [
+        { name: "user"; writable: true; signer: true },
+        { name: "vault"; writable: true; pda: object },
+        { name: "authority" },
+        { name: "mint" },
+        { name: "user_ata"; writable: true },
+        { name: "vault_ata"; writable: true },
+        { name: "token_program" },
+        { name: "associated_token_program" }
+      ];
+      args: [{ name: "amount"; type: "u64" }];
+    },
+    {
+      name: "execute_swap";
+      discriminator: [55, 149, 201, 101, 19, 246, 52, 218];
+      accounts: [
+        { name: "user"; writable: true; signer: true },
+        { name: "vault"; writable: true; pda: object },
+        { name: "authority" },
+        { name: "whirlpool" },
+        { name: "token_owner_account_a"; writable: true },
+        { name: "token_vault_a"; writable: true },
+        { name: "token_owner_account_b"; writable: true },
+        { name: "token_vault_b"; writable: true },
+        { name: "tick_array_0"; writable: true },
+        { name: "tick_array_1"; writable: true },
+        { name: "tick_array_2"; writable: true },
+        { name: "oracle" },
+        { name: "token_program" },
+        { name: "whirlpool_program" }
+      ];
+      args: [
+        { name: "amount_in"; type: "u64" },
+        { name: "min_amount_out"; type: "u64" },
+        { name: "a_to_b"; type: "bool" },
+        { name: "sqrt_price_limit"; type: "u128" }
+      ];
+    },
+    {
+      name: "update_config";
+      discriminator: [29, 158, 252, 191, 10, 83, 219, 99];
+      accounts: [
+        { name: "user"; writable: true; signer: true },
+        { name: "vault"; writable: true; pda: object },
+        { name: "authority" }
+      ];
+      args: [
+        { name: "daily_limit"; type: "u64" },
+        { name: "slippage_bps"; type: "u16" },
+        { name: "paused"; type: "bool" }
+      ];
+    },
+    {
+      name: "add_whitelist_pool";
+      discriminator: [91, 214, 34, 75, 122, 155, 202, 11];
+      accounts: [
+        { name: "user"; writable: true; signer: true },
+        { name: "vault"; writable: true; pda: object },
+        { name: "authority" }
+      ];
+      args: [{ name: "pool"; type: "pubkey" }];
+    },
+    {
+      name: "remove_whitelist_pool";
+      discriminator: [186, 125, 40, 71, 100, 153, 87, 222];
+      accounts: [
+        { name: "user"; writable: true; signer: true },
+        { name: "vault"; writable: true; pda: object },
+        { name: "authority" }
+      ];
+      args: [{ name: "pool"; type: "pubkey" }];
+    },
+    {
+      name: "add_whitelist_token";
+      discriminator: [144, 202, 53, 18, 236, 107, 155, 45];
+      accounts: [
+        { name: "user"; writable: true; signer: true },
+        { name: "vault"; writable: true; pda: object },
+        { name: "authority" }
+      ];
+      args: [{ name: "mint"; type: "pubkey" }];
+    },
+    {
+      name: "remove_whitelist_token";
+      discriminator: [63, 174, 210, 55, 18, 99, 200, 140];
+      accounts: [
+        { name: "user"; writable: true; signer: true },
+        { name: "vault"; writable: true; pda: object },
+        { name: "authority" }
+      ];
+      args: [{ name: "mint"; type: "pubkey" }];
+    }
+  ];
+  accounts: [{ name: "Vault"; discriminator: [211, 8, 232, 43, 2, 152, 117, 119] }];
+  types: [
+    {
+      name: "Vault";
+      type: {
+        kind: "struct";
+        fields: [
+          { name: "bump"; type: "u8" },
+          { name: "authority"; type: "pubkey" },
+          { name: "daily_spend_limit"; type: "u64" },
+          { name: "daily_spent"; type: "u64" },
+          { name: "last_reset_ts"; type: "i64" },
+          { name: "slippage_bps_cap"; type: "u16" },
+          { name: "whitelisted_tokens"; type: { vec: "pubkey" } },
+          { name: "whitelisted_pools"; type: { vec: "pubkey" } },
+          { name: "paused"; type: "bool" }
+        ];
+      };
+    }
+  ];
+  errors: [
+    { code: 6000; name: "Paused"; msg: "Vault is paused" },
+    { code: 6001; name: "DailyLimitExceeded"; msg: "Daily spend limit exceeded" },
+    { code: 6002; name: "PoolNotWhitelisted"; msg: "Pool is not whitelisted" },
+    { code: 6003; name: "TokenNotWhitelisted"; msg: "Token is not whitelisted" },
+    { code: 6004; name: "SlippageTooTight"; msg: "Slippage tolerance too tight" },
+    { code: 6005; name: "Overflow"; msg: "Arithmetic overflow" },
+    { code: 6006; name: "Unauthorized"; msg: "Unauthorized" }
+  ];
+} & Idl;
+
+export type VaultAccount = {
+  bump: number;
+  authority: string;
+  dailySpendLimit: bigint;
+  dailySpent: bigint;
+  lastResetTs: bigint;
+  slippageBpsCap: number;
+  whitelistedTokens: string[];
+  whitelistedPools: string[];
+  paused: boolean;
+};
+
+export type InitVaultArgs = {
+  dailyLimit: bigint;
+  slippageBps: number;
+};
+
+export type DepositArgs = {
+  amount: bigint;
+};
+
+export type WithdrawArgs = {
+  amount: bigint;
+};
+
+export type ExecuteSwapArgs = {
+  amountIn: bigint;
+  minAmountOut: bigint;
+  aToB: boolean;
+  sqrtPriceLimit: bigint;
+};
+
+export type UpdateConfigArgs = {
+  dailyLimit: bigint;
+  slippageBps: number;
+  paused: boolean;
+};

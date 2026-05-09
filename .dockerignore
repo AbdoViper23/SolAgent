@@ -1,0 +1,36 @@
+.git
+.gitignore
+.vscode
+.idea
+.DS_Store
+
+# All node_modules anywhere — re-installed inside the image
+**/node_modules
+
+# Build outputs
+**/dist
+**/.next
+**/target
+**/.turbo
+
+# Local env files — secrets should be passed at deploy time
+**/.env
+**/.env.local
+**/.env.development
+**/.env.production
+**/.env.*.local
+
+# Logs and caches
+**/*.log
+**/.cache
+**/.pnpm-store
+
+# Tests / docs that don't affect runtime
+**/coverage
+**/.eslintcache
+
+# Local-only state
+.omc/
+.claude/
+.vercel/
+.next/
