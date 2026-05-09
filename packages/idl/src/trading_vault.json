@@ -9,144 +9,579 @@
   "instructions": [
     {
       "name": "init_vault",
-      "discriminator": [77, 79, 18, 168, 133, 66, 235, 197],
+      "discriminator": [
+        77,
+        79,
+        85,
+        150,
+        33,
+        217,
+        52,
+        106
+      ],
       "accounts": [
-        { "name": "user", "writable": true, "signer": true },
-        { "name": "vault", "writable": true, "pda": { "seeds": [{ "kind": "const", "value": [118, 97, 117, 108, 116] }, { "kind": "account", "path": "user" }] } },
-        { "name": "system_program", "address": "11111111111111111111111111111111" }
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
       ],
       "args": [
-        { "name": "daily_limit", "type": "u64" },
-        { "name": "slippage_bps", "type": "u16" }
+        {
+          "name": "daily_limit",
+          "type": "u64"
+        },
+        {
+          "name": "slippage_bps",
+          "type": "u16"
+        }
       ]
     },
     {
       "name": "deposit",
-      "discriminator": [242, 35, 198, 137, 82, 225, 242, 182],
+      "discriminator": [
+        242,
+        35,
+        198,
+        137,
+        82,
+        225,
+        242,
+        182
+      ],
       "accounts": [
-        { "name": "user", "writable": true, "signer": true },
-        { "name": "vault", "writable": true, "pda": { "seeds": [{ "kind": "const", "value": [118, 97, 117, 108, 116] }, { "kind": "account", "path": "user" }] } },
-        { "name": "mint" },
-        { "name": "user_ata", "writable": true },
-        { "name": "vault_ata", "writable": true },
-        { "name": "token_program" },
-        { "name": "associated_token_program", "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJe8bv" },
-        { "name": "system_program", "address": "11111111111111111111111111111111" }
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "user_ata",
+          "writable": true
+        },
+        {
+          "name": "vault_ata",
+          "writable": true
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJe8bv"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
       ],
       "args": [
-        { "name": "amount", "type": "u64" }
+        {
+          "name": "amount",
+          "type": "u64"
+        }
       ]
     },
     {
       "name": "withdraw",
-      "discriminator": [183, 18, 70, 156, 148, 109, 161, 34],
+      "discriminator": [
+        183,
+        18,
+        70,
+        156,
+        148,
+        109,
+        161,
+        34
+      ],
       "accounts": [
-        { "name": "user", "writable": true, "signer": true },
-        { "name": "vault", "writable": true, "pda": { "seeds": [{ "kind": "const", "value": [118, 97, 117, 108, 116] }, { "kind": "account", "path": "user" }] } },
-        { "name": "authority" },
-        { "name": "mint" },
-        { "name": "user_ata", "writable": true },
-        { "name": "vault_ata", "writable": true },
-        { "name": "token_program" },
-        { "name": "associated_token_program", "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJe8bv" }
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority"
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "user_ata",
+          "writable": true
+        },
+        {
+          "name": "vault_ata",
+          "writable": true
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJe8bv"
+        }
       ],
       "args": [
-        { "name": "amount", "type": "u64" }
+        {
+          "name": "amount",
+          "type": "u64"
+        }
       ]
     },
     {
       "name": "execute_swap",
-      "discriminator": [55, 149, 201, 101, 19, 246, 52, 218],
+      "discriminator": [
+        56,
+        182,
+        124,
+        215,
+        155,
+        140,
+        157,
+        102
+      ],
       "accounts": [
-        { "name": "user", "writable": true, "signer": true },
-        { "name": "vault", "writable": true, "pda": { "seeds": [{ "kind": "const", "value": [118, 97, 117, 108, 116] }, { "kind": "account", "path": "user" }] } },
-        { "name": "authority" },
-        { "name": "whirlpool" },
-        { "name": "token_owner_account_a", "writable": true },
-        { "name": "token_vault_a", "writable": true },
-        { "name": "token_owner_account_b", "writable": true },
-        { "name": "token_vault_b", "writable": true },
-        { "name": "tick_array_0", "writable": true },
-        { "name": "tick_array_1", "writable": true },
-        { "name": "tick_array_2", "writable": true },
-        { "name": "oracle" },
-        { "name": "token_program" },
-        { "name": "whirlpool_program" }
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority"
+        },
+        {
+          "name": "whirlpool"
+        },
+        {
+          "name": "token_owner_account_a",
+          "writable": true
+        },
+        {
+          "name": "token_vault_a",
+          "writable": true
+        },
+        {
+          "name": "token_owner_account_b",
+          "writable": true
+        },
+        {
+          "name": "token_vault_b",
+          "writable": true
+        },
+        {
+          "name": "tick_array_0",
+          "writable": true
+        },
+        {
+          "name": "tick_array_1",
+          "writable": true
+        },
+        {
+          "name": "tick_array_2",
+          "writable": true
+        },
+        {
+          "name": "oracle"
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "whirlpool_program"
+        }
       ],
       "args": [
-        { "name": "amount_in", "type": "u64" },
-        { "name": "min_amount_out", "type": "u64" },
-        { "name": "a_to_b", "type": "bool" },
-        { "name": "sqrt_price_limit", "type": "u128" }
+        {
+          "name": "amount_in",
+          "type": "u64"
+        },
+        {
+          "name": "min_amount_out",
+          "type": "u64"
+        },
+        {
+          "name": "a_to_b",
+          "type": "bool"
+        },
+        {
+          "name": "sqrt_price_limit",
+          "type": "u128"
+        }
       ]
     },
     {
       "name": "update_config",
-      "discriminator": [29, 158, 252, 191, 10, 83, 219, 99],
+      "discriminator": [
+        29,
+        158,
+        252,
+        191,
+        10,
+        83,
+        219,
+        99
+      ],
       "accounts": [
-        { "name": "user", "writable": true, "signer": true },
-        { "name": "vault", "writable": true, "pda": { "seeds": [{ "kind": "const", "value": [118, 97, 117, 108, 116] }, { "kind": "account", "path": "user" }] } },
-        { "name": "authority" }
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority"
+        }
       ],
       "args": [
-        { "name": "daily_limit", "type": "u64" },
-        { "name": "slippage_bps", "type": "u16" },
-        { "name": "paused", "type": "bool" }
+        {
+          "name": "daily_limit",
+          "type": "u64"
+        },
+        {
+          "name": "slippage_bps",
+          "type": "u16"
+        },
+        {
+          "name": "paused",
+          "type": "bool"
+        }
       ]
     },
     {
       "name": "add_whitelist_pool",
-      "discriminator": [91, 214, 34, 75, 122, 155, 202, 11],
+      "discriminator": [
+        209,
+        74,
+        184,
+        10,
+        143,
+        194,
+        132,
+        102
+      ],
       "accounts": [
-        { "name": "user", "writable": true, "signer": true },
-        { "name": "vault", "writable": true, "pda": { "seeds": [{ "kind": "const", "value": [118, 97, 117, 108, 116] }, { "kind": "account", "path": "user" }] } },
-        { "name": "authority" }
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority"
+        }
       ],
       "args": [
-        { "name": "pool", "type": "pubkey" }
+        {
+          "name": "pool",
+          "type": "pubkey"
+        }
       ]
     },
     {
       "name": "remove_whitelist_pool",
-      "discriminator": [186, 125, 40, 71, 100, 153, 87, 222],
+      "discriminator": [
+        228,
+        203,
+        212,
+        98,
+        50,
+        172,
+        187,
+        222
+      ],
       "accounts": [
-        { "name": "user", "writable": true, "signer": true },
-        { "name": "vault", "writable": true, "pda": { "seeds": [{ "kind": "const", "value": [118, 97, 117, 108, 116] }, { "kind": "account", "path": "user" }] } },
-        { "name": "authority" }
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority"
+        }
       ],
       "args": [
-        { "name": "pool", "type": "pubkey" }
+        {
+          "name": "pool",
+          "type": "pubkey"
+        }
       ]
     },
     {
       "name": "add_whitelist_token",
-      "discriminator": [144, 202, 53, 18, 236, 107, 155, 45],
+      "discriminator": [
+        128,
+        56,
+        125,
+        80,
+        142,
+        129,
+        31,
+        103
+      ],
       "accounts": [
-        { "name": "user", "writable": true, "signer": true },
-        { "name": "vault", "writable": true, "pda": { "seeds": [{ "kind": "const", "value": [118, 97, 117, 108, 116] }, { "kind": "account", "path": "user" }] } },
-        { "name": "authority" }
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority"
+        }
       ],
       "args": [
-        { "name": "mint", "type": "pubkey" }
+        {
+          "name": "mint",
+          "type": "pubkey"
+        }
       ]
     },
     {
       "name": "remove_whitelist_token",
-      "discriminator": [63, 174, 210, 55, 18, 99, 200, 140],
+      "discriminator": [
+        65,
+        182,
+        42,
+        255,
+        198,
+        163,
+        73,
+        46
+      ],
       "accounts": [
-        { "name": "user", "writable": true, "signer": true },
-        { "name": "vault", "writable": true, "pda": { "seeds": [{ "kind": "const", "value": [118, 97, 117, 108, 116] }, { "kind": "account", "path": "user" }] } },
-        { "name": "authority" }
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority"
+        }
       ],
       "args": [
-        { "name": "mint", "type": "pubkey" }
+        {
+          "name": "mint",
+          "type": "pubkey"
+        }
       ]
     }
   ],
   "accounts": [
     {
       "name": "Vault",
-      "discriminator": [211, 8, 232, 43, 2, 152, 117, 119]
+      "discriminator": [
+        211,
+        8,
+        232,
+        43,
+        2,
+        152,
+        117,
+        119
+      ]
     }
   ],
   "types": [
@@ -155,26 +590,85 @@
       "type": {
         "kind": "struct",
         "fields": [
-          { "name": "bump", "type": "u8" },
-          { "name": "authority", "type": "pubkey" },
-          { "name": "daily_spend_limit", "type": "u64" },
-          { "name": "daily_spent", "type": "u64" },
-          { "name": "last_reset_ts", "type": "i64" },
-          { "name": "slippage_bps_cap", "type": "u16" },
-          { "name": "whitelisted_tokens", "type": { "vec": "pubkey" } },
-          { "name": "whitelisted_pools", "type": { "vec": "pubkey" } },
-          { "name": "paused", "type": "bool" }
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "daily_spend_limit",
+            "type": "u64"
+          },
+          {
+            "name": "daily_spent",
+            "type": "u64"
+          },
+          {
+            "name": "last_reset_ts",
+            "type": "i64"
+          },
+          {
+            "name": "slippage_bps_cap",
+            "type": "u16"
+          },
+          {
+            "name": "whitelisted_tokens",
+            "type": {
+              "vec": "pubkey"
+            }
+          },
+          {
+            "name": "whitelisted_pools",
+            "type": {
+              "vec": "pubkey"
+            }
+          },
+          {
+            "name": "paused",
+            "type": "bool"
+          }
         ]
       }
     }
   ],
   "errors": [
-    { "code": 6000, "name": "Paused", "msg": "Vault is paused" },
-    { "code": 6001, "name": "DailyLimitExceeded", "msg": "Daily spend limit exceeded" },
-    { "code": 6002, "name": "PoolNotWhitelisted", "msg": "Pool is not whitelisted" },
-    { "code": 6003, "name": "TokenNotWhitelisted", "msg": "Token is not whitelisted" },
-    { "code": 6004, "name": "SlippageTooTight", "msg": "Slippage tolerance too tight" },
-    { "code": 6005, "name": "Overflow", "msg": "Arithmetic overflow" },
-    { "code": 6006, "name": "Unauthorized", "msg": "Unauthorized" }
+    {
+      "code": 6000,
+      "name": "Paused",
+      "msg": "Vault is paused"
+    },
+    {
+      "code": 6001,
+      "name": "DailyLimitExceeded",
+      "msg": "Daily spend limit exceeded"
+    },
+    {
+      "code": 6002,
+      "name": "PoolNotWhitelisted",
+      "msg": "Pool is not whitelisted"
+    },
+    {
+      "code": 6003,
+      "name": "TokenNotWhitelisted",
+      "msg": "Token is not whitelisted"
+    },
+    {
+      "code": 6004,
+      "name": "SlippageTooTight",
+      "msg": "Slippage tolerance too tight"
+    },
+    {
+      "code": 6005,
+      "name": "Overflow",
+      "msg": "Arithmetic overflow"
+    },
+    {
+      "code": 6006,
+      "name": "Unauthorized",
+      "msg": "Unauthorized"
+    }
   ]
 }

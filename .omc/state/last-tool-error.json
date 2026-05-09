@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"cd /home/AbdoViper/Projects/solana/dev3pack_hack/apps/mcp-server\\nset -x SOLANA_PRIVATE_KEY (node -e \\\"const fs=require('fs'),{base58}=require('@scure/base');console.log(base58.encode(Uint...",
+  "error": "Exit code 2\n/bin/bash: eval: line 6: syntax error near unexpected token `('\n/bin/bash: eval: line 6: `set -x SOLANA_PRIVATE_KEY (node -e \"const fs=require('fs'),{base58}=require('@scure/base');console.log(base58.encode(Uint8Array.from(JSON.parse(fs.readFileSync(require('os').homedir()+'/.config/solana/id.json')))))\" 2>&1)'",
+  "timestamp": "2026-05-09T21:29:56.903Z",
+  "retry_count": 1
+}

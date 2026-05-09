@@ -11,11 +11,15 @@
 //     pnpm --filter solana-trading-agent-mcp setup:whitelist
 
 import "dotenv/config";
-import { Connection, Keypair, PublicKey } from "@solana/web3.js";
-import { AnchorProvider, Program, Wallet } from "@coral-xyz/anchor";
+import { Connection, Keypair, PublicKey, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import anchorPkg from "@coral-xyz/anchor";
+const { AnchorProvider, Program, Wallet, BN } = anchorPkg;
 import { base58 } from "@scure/base";
 import { tradingVaultIdl } from "@workspace/idl";
 import { CRYPTO_TOKENS } from "@workspace/sdk/tokens";
+
+const DEFAULT_DAILY_LIMIT_LAMPORTS = 100 * LAMPORTS_PER_SOL; // 100 SOL/day
+const DEFAULT_SLIPPAGE_BPS = 100; // 1%
 
 const RPC_URL = process.env.SOLANA_RPC_URL ?? "https://api.devnet.solana.com";
 const PRIVATE_KEY_B58 = process.env.SOLANA_PRIVATE_KEY ?? "";
@@ -72,11 +76,27 @@ async function main() {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     vault = await (program.account as any).vault.fetch(vaultPda);
-  } catch (err) {
-    console.error(`Could not load vault state — has init_vault been called for ${wallet.publicKey.toBase58()}?`);
-    console.error(String(err));
-    process.exit(1);
+    console.log("Vault already initialized.");
+  } catch {
+    console.log(
+      `Vault not initialized — calling init_vault (daily limit ${
+        DEFAULT_DAILY_LIMIT_LAMPORTS / LAMPORTS_PER_SOL
+      } SOL, slippage ${DEFAULT_SLIPPAGE_BPS / 100}%) ...`,
+    );
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sig = await (program.methods as any)
+      .initVault(new BN(DEFAULT_DAILY_LIMIT_LAMPORTS), DEFAULT_SLIPPAGE_BPS)
+      .accounts({
+        user: wallet.publicKey,
+        vault: vaultPda,
+        systemProgram: SystemProgram.programId,
+      })
+      .rpc();
+    console.log(`  → init_vault ok (${sig.slice(0, 8)}...)`);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    vault = await (program.account as any).vault.fetch(vaultPda);
   }
+  console.log("");
 
   const existingMints = new Set<string>(
     (vault.whitelistedTokens ?? []).map((p: PublicKey) => p.toBase58()),

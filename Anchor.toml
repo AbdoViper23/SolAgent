@@ -1,13 +1,12 @@
 [toolchain]
 anchor_version = "0.31.1"
-solana_version = "2.1.0"
 
 [features]
 resolution = true
 skip-lint = false
 
 [programs.devnet]
-trading_vault = "YourVaultProgramId1111111111111111111111111"
+trading_vault = "DdteTWoeg1ed6USme9cyTKwSiThSb1VaoabjZMUTaMzb"
 
 [registry]
 url = "https://api.apr.dev"

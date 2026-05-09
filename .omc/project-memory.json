@@ -26,7 +26,7 @@
     "runtime": "Node.js 22"
   },
   "build": {
-    "buildCommand": "cd /home/AbdoViper/Projects/solana/dev3pack_hack/apps/web && pnpm build 2>&1 | tail -50",
+    "buildCommand": "pgrep -af \"anchor build|cargo build-sbf|rustc\" 2>&1 | grep -v grep | head -5\necho \"---SO FILE---\"\nls -la /home/AbdoViper/Projects/solana/dev3pack_hack/target/deploy/trading_vault.so 2>&1\necho \"---PROGRAM ON CHAIN---\"\nexport PATH=\"$HOME/.local/share/solana/install/active_release/bin:$PATH\"\nsolana program show DdteTWoeg1ed6USme9cyTKwSiThSb1VaoabjZMUTaMzb --url devnet 2>&1 | head -10",
     "testCommand": "pnpm test",
     "lintCommand": "pnpm lint",
     "devCommand": "pnpm dev",
@@ -117,6 +117,18 @@
       "type": "file"
     },
     {
+      "path": "programs/trading_vault/Cargo.toml",
+      "accessCount": 10,
+      "lastAccessed": 1778360149993,
+      "type": "file"
+    },
+    {
+      "path": "programs/trading_vault/src/lib.rs",
+      "accessCount": 10,
+      "lastAccessed": 1778360201399,
+      "type": "file"
+    },
+    {
       "path": "apps/web/package.json",
       "accessCount": 9,
       "lastAccessed": 1778323130139,
@@ -135,21 +147,15 @@
       "type": "file"
     },
     {
-      "path": "programs/trading_vault/src/lib.rs",
-      "accessCount": 7,
-      "lastAccessed": 1778320301666,
+      "path": "apps/swap-analyzer-service/src/server.ts",
+      "accessCount": 8,
+      "lastAccessed": 1778336715529,
       "type": "file"
     },
     {
       "path": "apps/web/components/SwapPanel.tsx",
       "accessCount": 7,
       "lastAccessed": 1778320302092,
-      "type": "file"
-    },
-    {
-      "path": "apps/swap-analyzer-service/src/server.ts",
-      "accessCount": 7,
-      "lastAccessed": 1778321254082,
       "type": "file"
     },
     {
@@ -171,6 +177,24 @@
       "type": "file"
     },
     {
+      "path": "apps/swap-analyzer-service/package.json",
+      "accessCount": 6,
+      "lastAccessed": 1778336577805,
+      "type": "file"
+    },
+    {
+      "path": "Anchor.toml",
+      "accessCount": 6,
+      "lastAccessed": 1778360151244,
+      "type": "file"
+    },
+    {
+      "path": "packages/sdk/package.json",
+      "accessCount": 5,
+      "lastAccessed": 1778336564249,
+      "type": "file"
+    },
+    {
       "path": "apps/web/components/landing/Hero.tsx",
       "accessCount": 4,
       "lastAccessed": 1778285600820,
@@ -183,15 +207,15 @@
       "type": "file"
     },
     {
-      "path": "apps/swap-analyzer-service/package.json",
-      "accessCount": 4,
-      "lastAccessed": 1778321143341,
-      "type": "file"
-    },
-    {
       "path": "apps/mcp-server/package.json",
       "accessCount": 4,
       "lastAccessed": 1778321307114,
+      "type": "file"
+    },
+    {
+      "path": "packages/sdk/src/index.ts",
+      "accessCount": 4,
+      "lastAccessed": 1778336443507,
       "type": "file"
     },
     {
@@ -225,12 +249,6 @@
       "type": "file"
     },
     {
-      "path": "packages/sdk/package.json",
-      "accessCount": 3,
-      "lastAccessed": 1778322119371,
-      "type": "file"
-    },
-    {
       "path": "apps/web/components/landing/FeatureGrid.tsx",
       "accessCount": 2,
       "lastAccessed": 1778285601014,
@@ -255,21 +273,9 @@
       "type": "file"
     },
     {
-      "path": "programs/trading_vault/Cargo.toml",
-      "accessCount": 2,
-      "lastAccessed": 1778285873843,
-      "type": "file"
-    },
-    {
       "path": "apps/oracle-service/package.json",
       "accessCount": 2,
       "lastAccessed": 1778285900150,
-      "type": "file"
-    },
-    {
-      "path": "packages/sdk/src/index.ts",
-      "accessCount": 2,
-      "lastAccessed": 1778285909867,
       "type": "file"
     },
     {
@@ -360,12 +366,6 @@
       "path": "apps/web/components/icons/GithubIcon.tsx",
       "accessCount": 1,
       "lastAccessed": 1778285150843,
-      "type": "file"
-    },
-    {
-      "path": "Anchor.toml",
-      "accessCount": 1,
-      "lastAccessed": 1778285873738,
       "type": "file"
     },
     {

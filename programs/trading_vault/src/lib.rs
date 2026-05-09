@@ -1,10 +1,20 @@
 use anchor_lang::prelude::*;
+use anchor_lang::solana_program::{
+    instruction::{AccountMeta, Instruction},
+    program::invoke_signed,
+};
 use anchor_spl::token_interface::{
     Mint, TokenAccount, TokenInterface, TransferChecked, transfer_checked,
 };
 use anchor_spl::associated_token::AssociatedToken;
 
-declare_id!("YourVaultProgramId1111111111111111111111111");
+// Whirlpool's `swap` instruction discriminator = first 8 bytes of sha256("global:swap").
+// Stable across Whirlpool program upgrades; constructed manually to avoid pulling
+// the whirlpool crate (which unconditionally registers a #[global_allocator]).
+const WHIRLPOOL_SWAP_DISCRIMINATOR: [u8; 8] =
+    [0xf8, 0xc6, 0x9e, 0x91, 0xe1, 0x75, 0x87, 0xc8];
+
+declare_id!("DdteTWoeg1ed6USme9cyTKwSiThSb1VaoabjZMUTaMzb");
 
 pub const VAULT_SEED: &[u8] = b"vault";
 pub const SECONDS_PER_DAY: i64 = 86_400;
@@ -116,29 +126,52 @@ pub mod trading_vault {
         let seeds: &[&[u8]] = &[VAULT_SEED, user_key.as_ref(), &[bump]];
         let signer_seeds = &[seeds];
 
-        whirlpool::cpi::swap(
-            CpiContext::new_with_signer(
+        // Manual Whirlpool swap CPI:
+        //   discriminator + amount + other_amount_threshold + sqrt_price_limit
+        //   + amount_specified_is_input(=true) + a_to_b
+        let mut data = Vec::with_capacity(8 + 8 + 8 + 16 + 1 + 1);
+        data.extend_from_slice(&WHIRLPOOL_SWAP_DISCRIMINATOR);
+        data.extend_from_slice(&amount_in.to_le_bytes());
+        data.extend_from_slice(&min_amount_out.to_le_bytes());
+        data.extend_from_slice(&sqrt_price_limit.to_le_bytes());
+        data.push(1u8);
+        data.push(if a_to_b { 1u8 } else { 0u8 });
+
+        let ix = Instruction {
+            program_id: ctx.accounts.whirlpool_program.key(),
+            accounts: vec![
+                AccountMeta::new_readonly(ctx.accounts.token_program.key(), false),
+                AccountMeta::new_readonly(ctx.accounts.vault.key(), true),
+                AccountMeta::new(ctx.accounts.whirlpool.key(), false),
+                AccountMeta::new(ctx.accounts.token_owner_account_a.key(), false),
+                AccountMeta::new(ctx.accounts.token_vault_a.key(), false),
+                AccountMeta::new(ctx.accounts.token_owner_account_b.key(), false),
+                AccountMeta::new(ctx.accounts.token_vault_b.key(), false),
+                AccountMeta::new(ctx.accounts.tick_array_0.key(), false),
+                AccountMeta::new(ctx.accounts.tick_array_1.key(), false),
+                AccountMeta::new(ctx.accounts.tick_array_2.key(), false),
+                AccountMeta::new(ctx.accounts.oracle.key(), false),
+            ],
+            data,
+        };
+
+        invoke_signed(
+            &ix,
+            &[
                 ctx.accounts.whirlpool_program.to_account_info(),
-                whirlpool::cpi::accounts::Swap {
-                    token_program: ctx.accounts.token_program.to_account_info(),
-                    token_authority: ctx.accounts.vault.to_account_info(),
-                    whirlpool: ctx.accounts.whirlpool.to_account_info(),
-                    token_owner_account_a: ctx.accounts.token_owner_account_a.to_account_info(),
-                    token_vault_a: ctx.accounts.token_vault_a.to_account_info(),
-                    token_owner_account_b: ctx.accounts.token_owner_account_b.to_account_info(),
-                    token_vault_b: ctx.accounts.token_vault_b.to_account_info(),
-                    tick_array_0: ctx.accounts.tick_array_0.to_account_info(),
-                    tick_array_1: ctx.accounts.tick_array_1.to_account_info(),
-                    tick_array_2: ctx.accounts.tick_array_2.to_account_info(),
-                    oracle: ctx.accounts.oracle.to_account_info(),
-                },
-                signer_seeds,
-            ),
-            amount_in,
-            min_amount_out,
-            sqrt_price_limit,
-            true,
-            a_to_b,
+                ctx.accounts.token_program.to_account_info(),
+                ctx.accounts.vault.to_account_info(),
+                ctx.accounts.whirlpool.to_account_info(),
+                ctx.accounts.token_owner_account_a.to_account_info(),
+                ctx.accounts.token_vault_a.to_account_info(),
+                ctx.accounts.token_owner_account_b.to_account_info(),
+                ctx.accounts.token_vault_b.to_account_info(),
+                ctx.accounts.tick_array_0.to_account_info(),
+                ctx.accounts.tick_array_1.to_account_info(),
+                ctx.accounts.tick_array_2.to_account_info(),
+                ctx.accounts.oracle.to_account_info(),
+            ],
+            signer_seeds,
         )?;
 
         Ok(())
