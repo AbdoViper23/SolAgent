@@ -14,12 +14,26 @@ import { AnchorProvider, Program, BN, Wallet } from "@coral-xyz/anchor";
 import { base58 } from "@scure/base";
 import { createX402Client } from "@workspace/x402-client";
 import { tradingVaultIdl } from "@workspace/idl";
+import {
+  resolveCryptoInput,
+  getEquityTicker,
+  CRYPTO_TOKENS,
+  EQUITY_TICKERS,
+  CRYPTO_SYMBOLS,
+  EQUITY_SYMBOLS,
+} from "@workspace/sdk/tokens";
 import WebSocket from "ws";
+
+// Accepts either a registered symbol ("SOL", "SAMO", "PYUSD") or a base58 mint
+// address. Throws with a helpful message for unknown inputs.
+function resolveMint(input: string): string {
+  return resolveCryptoInput(input).mint;
+}
 
 // ── Env ───────────────────────────────────────────────────────────────────────
 const RPC_URL = process.env.SOLANA_RPC_URL ?? "https://api.devnet.solana.com";
 const PRIVATE_KEY_B58 = process.env.SOLANA_PRIVATE_KEY ?? "";
-const VAULT_PROGRAM_ID = process.env.VAULT_PROGRAM_ID ?? "YourVaultProgramId1111111111111111111111111";
+const VAULT_PROGRAM_ID = process.env.VAULT_PROGRAM_ID ?? "DdteTWoeg1ed6USme9cyTKwSiThSb1VaoabjZMUTaMzb";
 const X402_BASE_URL = process.env.X402_BASE_URL ?? "";
 const X402_FACILITATOR_URL = process.env.X402_FACILITATOR_URL ?? "https://facilitator.payai.network";
 
@@ -147,15 +161,15 @@ server.registerTool(
   "deposit_to_vault",
   {
     title: "Deposit to Vault",
-    description: "Deposit SOL (wSOL) or devUSDC into your trading vault",
+    description: "Deposit a supported crypto token into your trading vault. Accepts a symbol (SOL, USDC, USDT, SAMO, TMAC, PYUSD, BERN) or a raw mint address.",
     inputSchema: {
-      mint: z.string().describe("Token mint address (wSOL or devUSDC)"),
-      amount: z.string().describe("Amount in smallest unit (lamports for SOL, micro-USDC for devUSDC)"),
+      mint: z.string().describe("Token symbol (SOL, USDC, ...) or base58 mint address"),
+      amount: z.string().describe("Amount in smallest unit (lamports for SOL, micro-USDC for stables, etc.)"),
     },
   },
   async ({ mint, amount }) => {
     const [vaultPda] = deriveVaultPda(wallet.publicKey);
-    const mintPubkey = new PublicKey(mint);
+    const mintPubkey = new PublicKey(resolveMint(mint));
     const userAta = await getAssociatedTokenAddress(mintPubkey, wallet.publicKey);
     const vaultAta = await getAssociatedTokenAddress(mintPubkey, vaultPda, true);
     const { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } = await import("@solana/spl-token");
@@ -192,15 +206,15 @@ server.registerTool(
   "withdraw_from_vault",
   {
     title: "Withdraw from Vault",
-    description: "Withdraw tokens from vault back to your wallet",
+    description: "Withdraw tokens from vault back to your wallet. Accepts a symbol (SOL, USDC, USDT, SAMO, TMAC, PYUSD, BERN) or a raw mint address.",
     inputSchema: {
-      mint: z.string().describe("Token mint address"),
+      mint: z.string().describe("Token symbol or base58 mint address"),
       amount: z.string().describe("Amount in smallest unit"),
     },
   },
   async ({ mint, amount }) => {
     const [vaultPda] = deriveVaultPda(wallet.publicKey);
-    const mintPubkey = new PublicKey(mint);
+    const mintPubkey = new PublicKey(resolveMint(mint));
     const userAta = await getAssociatedTokenAddress(mintPubkey, wallet.publicKey);
     const vaultAta = await getAssociatedTokenAddress(mintPubkey, vaultPda, true);
     const { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } = await import("@solana/spl-token");
@@ -236,10 +250,10 @@ server.registerTool(
   "get_best_quote",
   {
     title: "Get Best Quote",
-    description: "Get best swap quote across 3 Orca Whirlpool pools (ts64, ts8, splash)",
+    description: "Get best swap quote across registered Orca Whirlpool pools for any supported pair. Accepts symbols (SOL/USDC/USDT/SAMO/TMAC/PYUSD/BERN) or raw mint addresses.",
     inputSchema: {
-      inputMint: z.string().describe("Input token mint address"),
-      outputMint: z.string().describe("Output token mint address"),
+      inputMint: z.string().describe("Input token symbol or base58 mint address"),
+      outputMint: z.string().describe("Output token symbol or base58 mint address"),
       amountIn: z.string().describe("Input amount in smallest unit"),
     },
   },
@@ -260,7 +274,11 @@ server.registerTool(
       };
     }
     try {
-      const { data } = await http.post("/analyze", { inputMint, outputMint, amountIn });
+      const { data } = await http.post("/analyze", {
+        inputMint: resolveMint(inputMint),
+        outputMint: resolveMint(outputMint),
+        amountIn,
+      });
       return {
         content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }],
       };
@@ -374,15 +392,138 @@ server.registerTool(
   }
 );
 
+// get_stock_price — pull a real-time equity quote from the oracle service via x402.
+server.registerTool(
+  "get_stock_price",
+  {
+    title: "Get Stock Price (x402-paid)",
+    description:
+      "Get a real-time price for a US equity (AAPL, TSLA, NVDA, MSFT, GOOGL, AMZN, META) via Pyth Network. Costs $0.001 via x402. Stocks are watch-only — they cannot be traded on Solana devnet.",
+    inputSchema: {
+      ticker: z.string().describe("Equity ticker (AAPL, TSLA, NVDA, MSFT, GOOGL, AMZN, META)"),
+    },
+  },
+  async ({ ticker }) => {
+    if (!http) {
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: JSON.stringify(
+              { error: "x402 client not configured. Set X402_BASE_URL and SOLANA_PRIVATE_KEY env vars." },
+              null,
+              2,
+            ),
+          },
+        ],
+        isError: true,
+      };
+    }
+    const upper = ticker.toUpperCase();
+    if (!getEquityTicker(upper)) {
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: JSON.stringify(
+              { error: "unknown_ticker", supported: EQUITY_SYMBOLS, ticker: upper },
+              null,
+              2,
+            ),
+          },
+        ],
+        isError: true,
+      };
+    }
+    try {
+      const { data } = await http.get(`/price/equity/${upper}`);
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: JSON.stringify(
+              {
+                ticker: data.symbol,
+                label: data.label,
+                price: data.price,
+                confidence: data.conf,
+                publishTime: data.publishTime,
+                publishTimeHuman: new Date(data.publishTime * 1000).toISOString(),
+                stale: data.stale,
+                note: "Equity prices are watch-only on Solana devnet. xStocks-style tokenized trading is mainnet-only.",
+              },
+              null,
+              2,
+            ),
+          },
+        ],
+      };
+    } catch (err) {
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: JSON.stringify({ error: "Failed to fetch equity price", detail: String(err) }, null, 2),
+          },
+        ],
+        isError: true,
+      };
+    }
+  },
+);
+
+// list_supported_assets — discoverability for callers that want the full registry.
+server.registerTool(
+  "list_supported_assets",
+  {
+    title: "List Supported Assets",
+    description:
+      "List every crypto token (tradeable on Solana devnet via Orca) and equity ticker (price-only via Pyth) this trading agent supports.",
+    inputSchema: {},
+  },
+  async () => {
+    const crypto = Object.values(CRYPTO_TOKENS).map((t) => ({
+      symbol: t.symbol,
+      label: t.label,
+      mint: t.mint,
+      decimals: t.decimals,
+      isStable: t.isStable ?? false,
+      hasPythFeed: !!t.pythFeedId,
+    }));
+    const equity = Object.values(EQUITY_TICKERS).map((t) => ({
+      symbol: t.symbol,
+      label: t.label,
+      type: "watch-only",
+    }));
+    return {
+      content: [
+        {
+          type: "text" as const,
+          text: JSON.stringify(
+            {
+              cryptoTradeable: crypto,
+              equityWatchOnly: equity,
+              cryptoSymbols: CRYPTO_SYMBOLS,
+              equitySymbols: EQUITY_SYMBOLS,
+            },
+            null,
+            2,
+          ),
+        },
+      ],
+    };
+  },
+);
+
 // analyze_routes
 server.registerTool(
   "analyze_routes",
   {
     title: "Analyze Routes",
-    description: "Get detailed multi-pool route analysis (costs $0.005 via x402)",
+    description: "Get detailed multi-pool route analysis for any supported pair. Accepts symbols or raw mint addresses. Costs $0.005 via x402.",
     inputSchema: {
-      inputMint: z.string().describe("Input token mint address"),
-      outputMint: z.string().describe("Output token mint address"),
+      inputMint: z.string().describe("Input token symbol or base58 mint address"),
+      outputMint: z.string().describe("Output token symbol or base58 mint address"),
       amountIn: z.string().describe("Input amount in smallest unit"),
     },
   },
@@ -403,7 +544,11 @@ server.registerTool(
       };
     }
 
-    const response = await http.post("/analyze", { inputMint, outputMint, amountIn });
+    const response = await http.post("/analyze", {
+      inputMint: resolveMint(inputMint),
+      outputMint: resolveMint(outputMint),
+      amountIn,
+    });
 
     return {
       content: [
@@ -435,10 +580,10 @@ server.registerTool(
   {
     title: "Stream Best Quote (60s WSS, x402-paid)",
     description:
-      "Pay once via x402 to open a 60-second WebSocket stream that pushes the freshest Orca multi-pool best quote whenever it changes. Returns the timeline + best observed price after the window closes.",
+      "Pay once via x402 to open a 60-second WebSocket stream that pushes the freshest Orca multi-pool best quote whenever it changes. Returns the timeline + best observed price after the window closes. Accepts symbols (SOL, USDC, SAMO, ...) or raw mints.",
     inputSchema: {
-      inputMint: z.string().describe("Input token mint address"),
-      outputMint: z.string().describe("Output token mint address"),
+      inputMint: z.string().describe("Input token symbol or base58 mint address"),
+      outputMint: z.string().describe("Output token symbol or base58 mint address"),
       amountIn: z.string().describe("Input amount in smallest unit"),
     },
   },
@@ -462,8 +607,8 @@ server.registerTool(
     let init: { sessionId: string; expiresAt: number; durationMs: number; wsUrl: string };
     try {
       const { data } = await http.post("/stream/quote/init", {
-        inputMint,
-        outputMint,
+        inputMint: resolveMint(inputMint),
+        outputMint: resolveMint(outputMint),
         amountIn,
       });
       init = data;

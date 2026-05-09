@@ -6,7 +6,7 @@ import { useMemo } from "react";
 import { tradingVaultIdl as idl } from "@workspace/idl";
 
 const PROGRAM_ID_STR =
-  process.env.NEXT_PUBLIC_VAULT_PROGRAM_ID ?? "YourVaultProgramId1111111111111111111111111";
+  process.env.NEXT_PUBLIC_VAULT_PROGRAM_ID ?? "DdteTWoeg1ed6USme9cyTKwSiThSb1VaoabjZMUTaMzb";
 
 export function useTradingVault() {
   const wallet = useAnchorWallet();

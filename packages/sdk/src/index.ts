@@ -26,6 +26,8 @@ import { address } from "@solana/kit";
 import { tradingVaultIdl } from "@workspace/idl";
 import type { TradingVault } from "@workspace/idl";
 
+export * from "./tokens.js";
+
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 export const WHIRLPOOL_PROGRAM_ID = "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc";

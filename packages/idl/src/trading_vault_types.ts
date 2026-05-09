@@ -1,7 +1,7 @@
 import type { Idl } from "@coral-xyz/anchor";
 
 export type TradingVault = {
-  address: "YourVaultProgramId1111111111111111111111111";
+  address: "DdteTWoeg1ed6USme9cyTKwSiThSb1VaoabjZMUTaMzb";
   metadata: {
     name: "trading_vault";
     version: "0.1.0";

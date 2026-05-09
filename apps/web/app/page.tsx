@@ -5,6 +5,7 @@ import { FeatureGrid } from "@/components/landing/FeatureGrid";
 import { HowItWorks } from "@/components/landing/HowItWorks";
 import { MCPShowcase } from "@/components/landing/MCPShowcase";
 import { CTA } from "@/components/landing/CTA";
+import { PriceTicker } from "@/components/PriceTicker";
 
 export default function LandingPage() {
   return (
@@ -16,6 +17,7 @@ export default function LandingPage() {
 
       <main className="flex-1">
         <Hero />
+        <PriceTicker />
         <FeatureGrid />
         <HowItWorks />
         <MCPShowcase />

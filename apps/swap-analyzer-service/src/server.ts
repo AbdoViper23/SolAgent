@@ -3,14 +3,12 @@ import express from "express";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
 import { z } from "zod";
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-import * as orca from "@orca-so/whirlpools";
-import { createSolanaRpc } from "@solana/kit";
 import "dotenv/config";
-import { DEVNET_POOLS } from "./pools.js";
+import { getPoolsForMintPair, getSupportedPairs } from "./poolIndex.js";
 import {
   QuoteStreamHub,
   StreamCapacityError,
+  UnsupportedPairError,
   createUpgradeRouter,
 } from "./streaming.js";
 import { buildStreamPaymentMiddleware } from "./x402.js";
@@ -53,15 +51,6 @@ const AnalyzeSchema = z.object({
   amountIn: z.string().regex(/^\d+$/, "amountIn must be a whole number string"),
 });
 
-interface RouteResult {
-  pool: string;
-  tickSpacing: number;
-  label: string;
-  estimatedOut: string;
-  priceImpactPct: string;
-  fee: string;
-}
-
 app.post("/analyze", async (req, res) => {
   const parsed = AnalyzeSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -70,59 +59,29 @@ app.post("/analyze", async (req, res) => {
   }
 
   const { inputMint, outputMint, amountIn } = parsed.data;
-  const amountInBigInt = BigInt(amountIn);
+  const pools = getPoolsForMintPair(inputMint, outputMint);
+
+  if (pools.length === 0) {
+    res.status(404).json({
+      error: "unsupported_pair",
+      detail: "No registered Orca devnet pool for this mint pair.",
+      inputMint,
+      outputMint,
+      supportedPairs: getSupportedPairs(),
+    });
+    return;
+  }
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (orca as any).setWhirlpoolsConfig("solanaDevnet");
-    const rpc = createSolanaRpc(RPC_URL);
-
-    const routes: RouteResult[] = [];
-
-    await Promise.all(
-      DEVNET_POOLS.map(async (pool) => {
-        try {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const result = await (orca as any).swapInstructions(
-            rpc,
-            { inputAmount: amountInBigInt, mint: inputMint },
-            pool.address,
-            100,
-          );
-          const quote = result?.quote ?? {};
-          const estimatedOut = (quote.tokenEstOut ?? quote.tokenMinOut ?? 0n).toString();
-          const fee = (quote.tradeFee ?? quote.feeAmount ?? 0n).toString();
-
-          routes.push({
-            pool: pool.address,
-            tickSpacing: pool.tickSpacing,
-            label: pool.label,
-            estimatedOut,
-            priceImpactPct: "0.0000",
-            fee,
-          });
-        } catch (poolErr) {
-          console.warn(`Pool ${pool.address} (${pool.label}) error:`, String(poolErr));
-        }
-      })
-    );
-
-    routes.sort((a, b) => {
-      const diff = BigInt(b.estimatedOut) - BigInt(a.estimatedOut);
-      return diff > 0n ? 1 : diff < 0n ? -1 : 0;
-    });
-
-    const bestRoute = routes[0]
-      ? { pool: routes[0].pool, estimatedOut: routes[0].estimatedOut }
-      : null;
+    const snapshot = await hub.quoteOnce({ inputMint, outputMint, amountIn }, pools);
 
     res.json({
       inputMint,
       outputMint,
       amountIn,
-      routes,
-      bestRoute,
-      routesEvaluated: DEVNET_POOLS.length,
+      routes: snapshot.routes,
+      bestRoute: snapshot.bestRoute,
+      routesEvaluated: pools.length,
     });
   } catch (err) {
     res.status(503).json({ error: "Swap analysis failed", detail: String(err) });
@@ -143,8 +102,18 @@ app.post(STREAM_INIT_PATH, streamPayment, async (req, res) => {
     return;
   }
 
+  const pools = getPoolsForMintPair(parsed.data.inputMint, parsed.data.outputMint);
+  if (pools.length === 0) {
+    res.status(404).json({
+      error: "unsupported_pair",
+      detail: "No registered Orca devnet pool for this mint pair.",
+      supportedPairs: getSupportedPairs(),
+    });
+    return;
+  }
+
   try {
-    const init = hub.initSession(parsed.data);
+    const init = hub.initSession(parsed.data, pools);
     const proto = req.headers["x-forwarded-proto"] ?? req.protocol;
     const wsScheme = proto === "https" ? "wss" : "ws";
     const host = req.headers.host;
@@ -152,16 +121,21 @@ app.post(STREAM_INIT_PATH, streamPayment, async (req, res) => {
     res.json({ ...init, wsUrl, params: parsed.data });
   } catch (err) {
     if (err instanceof StreamCapacityError) {
-      res.status(503).json({ error: "Stream capacity reached", cap: err.cap });
+      res.status(503).json({ error: "stream_capacity_reached", cap: err.cap });
       return;
     }
-    res.status(500).json({ error: "Failed to init stream", detail: String(err) });
+    if (err instanceof UnsupportedPairError) {
+      res.status(404).json({ error: "unsupported_pair", supportedPairs: getSupportedPairs() });
+      return;
+    }
+    res.status(500).json({ error: "init_failed", detail: String(err) });
   }
 });
 
 app.get("/health", (_req, res) =>
   res.json({
     status: "ok",
+    supportedPairs: getSupportedPairs(),
     stream: {
       durationMs: STREAM_DURATION_MS,
       pollIntervalMs: STREAM_POLL_INTERVAL_MS,
@@ -188,5 +162,6 @@ httpServer.listen(PORT, () => {
   console.log(
     `[stream] init=${STREAM_INIT_PATH} ws=${STREAM_WS_PREFIX}/:id duration=${STREAM_DURATION_MS}ms poll=${STREAM_POLL_INTERVAL_MS}ms price=$${STREAM_PRICE_USDC}`
   );
+  console.log(`[pairs] ${getSupportedPairs().join(", ")}`);
   console.log(`[x402] merchant=${MERCHANT} facilitator=${FACILITATOR_URL}`);
 });

@@ -25,6 +25,10 @@ const PricePanel = dynamic(
   () => import("@/components/PricePanel").then((m) => m.PricePanel),
   { ssr: false }
 );
+const AssetGrid = dynamic(
+  () => import("@/components/dashboard/AssetGrid").then((m) => m.AssetGrid),
+  { ssr: false }
+);
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -65,6 +69,10 @@ export default function AppPage() {
           >
             <motion.div variants={itemVariants}>
               <StatusStrip />
+            </motion.div>
+
+            <motion.div variants={itemVariants}>
+              <AssetGrid />
             </motion.div>
 
             <div className="grid gap-6 lg:grid-cols-3">

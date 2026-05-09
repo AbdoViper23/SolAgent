@@ -5,7 +5,7 @@ import { createSolanaRpc } from "@solana/kit";
 import type { IncomingMessage } from "node:http";
 import type { Duplex } from "node:stream";
 import { WebSocket, WebSocketServer } from "ws";
-import { DEVNET_POOLS } from "./pools.js";
+import type { PoolEntry } from "./poolIndex.js";
 
 export interface StreamConfig {
   rpcUrl: string;
@@ -37,6 +37,7 @@ export interface QuoteSnapshot {
 interface Session {
   id: string;
   params: QuoteParams;
+  pools: PoolEntry[];
   createdAt: number;
   expiresAt: number;
   ws: WebSocket | null;
@@ -53,6 +54,7 @@ export interface InitResult {
   sessionId: string;
   expiresAt: number;
   durationMs: number;
+  poolsEvaluated: number;
 }
 
 type ClosedReason = "expired" | "error" | "client";
@@ -73,9 +75,12 @@ export class QuoteStreamHub {
     this.orcaConfigured = true;
   }
 
-  initSession(params: QuoteParams): InitResult {
+  initSession(params: QuoteParams, pools: PoolEntry[]): InitResult {
     if (this.sessions.size >= this.cfg.maxConcurrent) {
       throw new StreamCapacityError(this.cfg.maxConcurrent);
+    }
+    if (pools.length === 0) {
+      throw new UnsupportedPairError(params.inputMint, params.outputMint);
     }
     const id = nanoid();
     const now = Date.now();
@@ -83,6 +88,7 @@ export class QuoteStreamHub {
     const session: Session = {
       id,
       params,
+      pools,
       createdAt: now,
       expiresAt,
       ws: null,
@@ -95,7 +101,7 @@ export class QuoteStreamHub {
       tickCount: 0,
     };
     this.sessions.set(id, session);
-    return { sessionId: id, expiresAt, durationMs: this.cfg.durationMs };
+    return { sessionId: id, expiresAt, durationMs: this.cfg.durationMs, poolsEvaluated: pools.length };
   }
 
   attachWebSocket(sessionId: string, ws: WebSocket): boolean {
@@ -120,7 +126,8 @@ export class QuoteStreamHub {
       sessionId,
       params: session.params,
       expiresAt: session.expiresAt,
-      poolsEvaluated: DEVNET_POOLS.length,
+      poolsEvaluated: session.pools.length,
+      poolLabels: session.pools.map((p) => p.label),
     });
 
     ws.on("close", () => {
@@ -141,7 +148,7 @@ export class QuoteStreamHub {
     const tick = async () => {
       if (!session.ws || session.ws.readyState !== WebSocket.OPEN) return;
       try {
-        const snapshot = await this.quoteOnce(session.params);
+        const snapshot = await this.quoteOnce(session.params, session.pools);
         session.tickCount += 1;
         const best = snapshot.bestRoute;
         const changed =
@@ -227,13 +234,13 @@ export class QuoteStreamHub {
     session.ws.send(JSON.stringify(payload));
   }
 
-  async quoteOnce(params: QuoteParams): Promise<QuoteSnapshot> {
+  async quoteOnce(params: QuoteParams, pools: PoolEntry[]): Promise<QuoteSnapshot> {
     await this.ensureConfigured();
     const amountInBigInt = BigInt(params.amountIn);
     const routes: RouteQuote[] = [];
 
     await Promise.all(
-      DEVNET_POOLS.map(async (pool) => {
+      pools.map(async (pool) => {
         try {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const result = await (orca as any).swapInstructions(
@@ -274,6 +281,12 @@ export class QuoteStreamHub {
 export class StreamCapacityError extends Error {
   constructor(public readonly cap: number) {
     super(`Stream capacity reached (${cap} active sessions)`);
+  }
+}
+
+export class UnsupportedPairError extends Error {
+  constructor(public readonly inputMint: string, public readonly outputMint: string) {
+    super(`No pool registered for pair ${inputMint} -> ${outputMint}`);
   }
 }
 

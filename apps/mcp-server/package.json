@@ -8,6 +8,7 @@
   "scripts": {
     "build": "tsc && shx chmod +x dist/index.js",
     "dev": "tsx src/index.ts",
+    "setup:whitelist": "tsx scripts/setup-whitelist.ts",
     "prepare": "npm run build"
   },
   "dependencies": {

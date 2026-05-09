@@ -21,18 +21,10 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/lib/use-toast";
 import { cn, formatAmount } from "@/lib/utils";
+import { TokenPicker } from "@/components/TokenPicker";
+import { CRYPTO_TOKENS } from "@/lib/tokens";
 
-const WSOL_MINT = "So11111111111111111111111111111111111111112";
-const DEV_USDC_MINT = "BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k";
 const SWAP_ANALYZER_URL = process.env.NEXT_PUBLIC_SWAP_ANALYZER_URL ?? "";
-
-const POOLS = [
-  { address: "3KBZiL2g8C7tiJ32hTv5v3KM7aK9htpqTw4cTXz1HvPt", label: "ts=64", tickSpacing: 64 },
-  { address: "2WUgXbAmBDePCNBpCkjMj7H8SqGXDvSijQbBMuXLnDgn", label: "ts=8", tickSpacing: 8 },
-  { address: "26WuWhkPzEoGMJLbcRqBhepCUB5yAFb3ZHnzYJkWbCHX", label: "Splash", tickSpacing: 0 },
-];
-
-type Direction = "SOL→USDC" | "USDC→SOL";
 
 interface PoolQuote {
   pool: string;
@@ -50,20 +42,43 @@ export function SwapPanel() {
 
   const [amountIn, setAmountIn] = useState("");
   const [slippage, setSlippage] = useState("0.5");
-  const [direction, setDirection] = useState<Direction>("SOL→USDC");
+  const [inputSymbol, setInputSymbol] = useState<string>("SOL");
+  const [outputSymbol, setOutputSymbol] = useState<string>("USDC");
 
   const [quotes, setQuotes] = useState<PoolQuote[]>([]);
   const [bestPool, setBestPool] = useState<string | null>(null);
   const [quotesLoading, setQuotesLoading] = useState(false);
   const [quotesError, setQuotesError] = useState<string | null>(null);
 
-  const inputMint = direction === "SOL→USDC" ? WSOL_MINT : DEV_USDC_MINT;
-  const outputMint = direction === "SOL→USDC" ? DEV_USDC_MINT : WSOL_MINT;
-  const inputSymbol = direction === "SOL→USDC" ? "SOL" : "devUSDC";
-  const outputSymbol = direction === "SOL→USDC" ? "devUSDC" : "SOL";
+  const inputToken = CRYPTO_TOKENS[inputSymbol];
+  const outputToken = CRYPTO_TOKENS[outputSymbol];
+  const inputMint = inputToken.mint;
+  const outputMint = outputToken.mint;
+  const inputDecimals = inputToken.decimals;
+  const outputDecimals = outputToken.decimals;
 
   const flipDirection = () => {
-    setDirection((d) => (d === "SOL→USDC" ? "USDC→SOL" : "SOL→USDC"));
+    setInputSymbol(outputSymbol);
+    setOutputSymbol(inputSymbol);
+    setQuotes([]);
+    setBestPool(null);
+  };
+
+  const handleInputSymbolChange = (sym: string) => {
+    if (sym === outputSymbol) {
+      // chosen the same as the other side — flip them so the pair stays unique.
+      setOutputSymbol(inputSymbol);
+    }
+    setInputSymbol(sym);
+    setQuotes([]);
+    setBestPool(null);
+  };
+
+  const handleOutputSymbolChange = (sym: string) => {
+    if (sym === inputSymbol) {
+      setInputSymbol(outputSymbol);
+    }
+    setOutputSymbol(sym);
     setQuotes([]);
     setBestPool(null);
   };
@@ -79,17 +94,9 @@ export function SwapPanel() {
     setBestPool(null);
 
     try {
-      const decimals = direction === "SOL→USDC" ? 9 : 6;
-      const rawAmount = Math.floor(Number(amountIn) * 10 ** decimals).toString();
+      const rawAmount = Math.floor(Number(amountIn) * 10 ** inputDecimals).toString();
 
       if (!SWAP_ANALYZER_URL) {
-        const placeholders: PoolQuote[] = POOLS.map((p) => ({
-          pool: p.address,
-          label: p.label,
-          tickSpacing: p.tickSpacing,
-          estimatedOut: "—",
-        }));
-        setQuotes(placeholders);
         setQuotesError(
           "NEXT_PUBLIC_SWAP_ANALYZER_URL not set — start swap-analyzer-service or set the env var."
         );
@@ -99,6 +106,8 @@ export function SwapPanel() {
       const res = await axios.post<{
         routes: PoolQuote[];
         bestRoute?: { pool: string };
+        error?: string;
+        supportedPairs?: string[];
       }>(`${SWAP_ANALYZER_URL}/analyze`, {
         inputMint,
         outputMint,
@@ -108,11 +117,20 @@ export function SwapPanel() {
       setQuotes(res.data.routes ?? []);
       setBestPool(res.data.bestRoute?.pool ?? null);
     } catch (e) {
-      setQuotesError(e instanceof Error ? e.message : "Failed to fetch quotes");
+      // Surface 404 unsupported_pair with the supported list so the user knows what to pick.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const detail = (e as any)?.response?.data;
+      if (detail?.error === "unsupported_pair" && detail.supportedPairs) {
+        setQuotesError(
+          `Pair ${inputSymbol}/${outputSymbol} not registered. Try one of: ${detail.supportedPairs.join(", ")}`,
+        );
+      } else {
+        setQuotesError(e instanceof Error ? e.message : "Failed to fetch quotes");
+      }
     } finally {
       setQuotesLoading(false);
     }
-  }, [amountIn, direction, inputMint, outputMint, toast]);
+  }, [amountIn, inputDecimals, inputMint, outputMint, inputSymbol, outputSymbol, toast]);
 
   const handleSwap = () => {
     toast({
@@ -124,8 +142,7 @@ export function SwapPanel() {
 
   const formatOut = (raw?: string) => {
     if (!raw || raw === "—" || raw === "0") return raw ?? "—";
-    const decimals = direction === "SOL→USDC" ? 6 : 9;
-    return formatAmount(Number(raw) / 10 ** decimals, decimals === 6 ? 2 : 4);
+    return formatAmount(Number(raw) / 10 ** outputDecimals, outputDecimals <= 6 ? 2 : 4);
   };
 
   return (
@@ -143,12 +160,12 @@ export function SwapPanel() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Direction + amount */}
+        {/* Pair + amount */}
         <div className="space-y-2">
-          <div className="flex items-end gap-2">
-            <div className="flex-1 space-y-1.5">
-              <Label htmlFor="swap-amount">You pay</Label>
-              <div className="relative">
+          <div className="space-y-1.5">
+            <Label htmlFor="swap-amount">You pay</Label>
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
                 <Input
                   id="swap-amount"
                   type="number"
@@ -156,13 +173,15 @@ export function SwapPanel() {
                   placeholder="0.00"
                   value={amountIn}
                   onChange={(e) => setAmountIn(e.target.value)}
-                  className="pr-20 font-mono tabular-nums"
+                  className="pr-3 font-mono tabular-nums"
                   autoComplete="off"
                 />
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground">
-                  {inputSymbol}
-                </div>
               </div>
+              <TokenPicker
+                value={inputSymbol}
+                onChange={handleInputSymbolChange}
+                exclude={outputSymbol}
+              />
             </div>
           </div>
 
@@ -181,13 +200,19 @@ export function SwapPanel() {
 
           <div className="space-y-1.5">
             <Label>You receive</Label>
-            <div className="flex h-10 items-center justify-between rounded-md border border-input bg-muted/30 px-3 font-mono text-sm tabular-nums text-muted-foreground">
-              <span>
-                {bestPool && quotes.length > 0
-                  ? formatOut(quotes.find((q) => q.pool === bestPool)?.estimatedOut ?? quotes[0]?.estimatedOut)
-                  : "—"}
-              </span>
-              <span className="font-sans font-medium text-foreground">{outputSymbol}</span>
+            <div className="flex items-center gap-2">
+              <div className="flex h-10 flex-1 items-center justify-between rounded-md border border-input bg-muted/30 px-3 font-mono text-sm tabular-nums text-muted-foreground">
+                <span>
+                  {bestPool && quotes.length > 0
+                    ? formatOut(quotes.find((q) => q.pool === bestPool)?.estimatedOut ?? quotes[0]?.estimatedOut)
+                    : "—"}
+                </span>
+              </div>
+              <TokenPicker
+                value={outputSymbol}
+                onChange={handleOutputSymbolChange}
+                exclude={inputSymbol}
+              />
             </div>
           </div>
         </div>
@@ -248,8 +273,8 @@ export function SwapPanel() {
 
               {quotesLoading && quotes.length === 0 && (
                 <div className="space-y-2">
-                  {POOLS.map((p) => (
-                    <Skeleton key={p.address} className="h-14 w-full" />
+                  {[0, 1, 2].map((i) => (
+                    <Skeleton key={i} className="h-14 w-full" />
                   ))}
                 </div>
               )}

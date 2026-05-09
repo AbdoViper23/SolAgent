@@ -8,6 +8,7 @@
     "start": "node dist/server.js"
   },
   "dependencies": {
+    "@workspace/sdk": "workspace:*",
     "@x402/express": "~2.1.0",
     "@x402/svm": "~2.1.0",
     "@x402/core": "~2.1.0",
