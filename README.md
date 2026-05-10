@@ -2,7 +2,15 @@
 
 An AI-powered DeFi trading agent built on Solana devnet. Users deposit SOL or devUSDC into a personal on-chain vault (PDA), then let a Claude Desktop MCP agent or the web UI execute Orca Whirlpool swaps on their behalf — protected by on-chain daily-spend limits, slippage caps, and token/pool whitelists.
 
-Two x402-gated microservices (Pyth oracle + multi-pool Orca route analyzer) form the agent's pricing and routing layer. ElevenLabs voice input rounds out the UX so users can trade by talking.
+Two x402-gated microservices (Pyth oracle + multi-pool Orca route analyzer) form the agent's pricing and routing layer. An ElevenLabs voice interface is embedded in the web app so users can deposit, swap, and send tokens entirely by speaking — no button clicks needed.
+
+## x402 Streaming Quotes
+
+Before executing any swap, the agent pays a small x402 micropayment to open a **60-second live WebSocket** to the swap analyzer. During those 60 seconds, the best Orca route price streams in real time. The window exists so the user can reconsider — markets move, and locking in a price at quote time often means executing at a stale rate. The user confirms (or cancels) once they are satisfied with what they see, and only then does the vault CPI fire. The x402 payment is non-refundable and intentionally tiny (~$0.005 in devUSDC) to discourage abuse while keeping the flow frictionless.
+
+## ElevenLabs Voice Trading
+
+The web app includes a voice widget powered by ElevenLabs that lets users interact with their vault by talking. Supported intents: **deposit**, **swap**, and **send**. The agent parses the spoken command, shows a confirmation modal with the transaction details, and only signs on explicit user approval. Voice integration uses a server-side signed-URL API route so the ElevenLabs API key is never exposed to the browser.
 
 ## Live Demo
 

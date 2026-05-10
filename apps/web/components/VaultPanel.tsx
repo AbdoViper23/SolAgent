@@ -1,7 +1,7 @@
 "use client";
 import * as React from "react";
 import { useState, useEffect, useCallback } from "react";
-import { useAnchorWallet, useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
 import { PublicKey, LAMPORTS_PER_SOL, SystemProgram } from "@solana/web3.js";
 import {
   getAssociatedTokenAddress,
@@ -10,7 +10,6 @@ import {
   createAssociatedTokenAccountInstruction,
   createSyncNativeInstruction,
 } from "@solana/spl-token";
-import { Transaction } from "@solana/web3.js";
 import { BN } from "@coral-xyz/anchor";
 import {
   ArrowDownToLine,
@@ -52,7 +51,6 @@ interface VaultBalances {
 
 export function VaultPanel() {
   const wallet = useAnchorWallet();
-  const { sendTransaction } = useWallet();
   const { connection } = useConnection();
   const tv = useTradingVault();
   const { toast } = useToast();
@@ -166,53 +164,41 @@ export function VaultPanel() {
       const userAta = await getAssociatedTokenAddress(mint, wallet.publicKey);
       const vaultAta = await getAssociatedTokenAddress(mint, pda, true);
 
-      // Create missing ATAs and wrap SOL if needed
-      const [userAtaInfo, vaultAtaInfo] = await Promise.all([
+      // Read vault + ATA states in parallel
+      const [userAtaInfo, vaultAtaInfo, vaultInfo] = await Promise.all([
         connection.getAccountInfo(userAta),
         connection.getAccountInfo(vaultAta),
+        connection.getAccountInfo(pda),
       ]);
-      const setupIxs: import("@solana/web3.js").TransactionInstruction[] = [];
-      if (!userAtaInfo) {
-        setupIxs.push(
-          createAssociatedTokenAccountInstruction(wallet.publicKey, userAta, wallet.publicKey, mint)
-        );
-      }
-      if (!vaultAtaInfo) {
-        setupIxs.push(
-          createAssociatedTokenAccountInstruction(wallet.publicKey, vaultAta, pda, mint)
-        );
-      }
-      if (depositMint === "SOL") {
-        setupIxs.push(
-          SystemProgram.transfer({ fromPubkey: wallet.publicKey, toPubkey: userAta, lamports: amountAtomic }),
-          createSyncNativeInstruction(userAta)
-        );
-      }
-      if (setupIxs.length > 0) {
-        const setupTx = new Transaction().add(...setupIxs);
-        const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
-        setupTx.recentBlockhash = blockhash;
-        setupTx.feePayer = wallet.publicKey;
-        const setupSig = await sendTransaction(setupTx, connection);
-        await connection.confirmTransaction({ signature: setupSig, blockhash, lastValidBlockHeight }, "confirmed");
-      }
 
-      // Auto-init vault if not yet created
-      const vaultInfo = await connection.getAccountInfo(pda);
+      // If vault not yet created, init it first (separate tx — different accounts)
       if (!vaultInfo) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await (tv.program as any).methods
-          .initVault(
-            new BN(1_000_000_000), // 1 SOL daily limit
-            100,                   // 1% slippage cap (u16)
-          )
+          .initVault(new BN(1_000_000_000), 100)
           .accounts({ user: wallet.publicKey, vault: pda, systemProgram: SystemProgram.programId })
           .rpc();
+      }
+
+      // Build pre-instructions that go into the same deposit tx (atomic)
+      const preIxs: import("@solana/web3.js").TransactionInstruction[] = [];
+      if (!userAtaInfo) {
+        preIxs.push(createAssociatedTokenAccountInstruction(wallet.publicKey, userAta, wallet.publicKey, mint));
+      }
+      if (!vaultAtaInfo) {
+        preIxs.push(createAssociatedTokenAccountInstruction(wallet.publicKey, vaultAta, pda, mint));
+      }
+      if (depositMint === "SOL") {
+        preIxs.push(
+          SystemProgram.transfer({ fromPubkey: wallet.publicKey, toPubkey: userAta, lamports: Number(amountAtomic) }),
+          createSyncNativeInstruction(userAta),
+        );
       }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const sig = await (tv.program as any).methods
         .deposit(new BN(amountAtomic.toString()))
+        .preInstructions(preIxs)
         .accounts({
           user: wallet.publicKey,
           vault: pda,
