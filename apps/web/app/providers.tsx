@@ -9,8 +9,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
     () => process.env.NEXT_PUBLIC_RPC_URL ?? clusterApiUrl("devnet"),
     []
   );
+  const connectionConfig = useMemo(
+    () => ({ confirmTransactionInitialTimeout: 120_000 }),
+    []
+  );
   return (
-    <ConnectionProvider endpoint={endpoint}>
+    <ConnectionProvider endpoint={endpoint} config={connectionConfig}>
       <WalletProvider wallets={[]} autoConnect>
         <WalletModalProvider>{children}</WalletModalProvider>
       </WalletProvider>

@@ -1,13 +1,16 @@
 "use client";
 import * as React from "react";
 import { useState, useEffect, useCallback } from "react";
-import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
+import { useAnchorWallet, useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { PublicKey, LAMPORTS_PER_SOL, SystemProgram } from "@solana/web3.js";
 import {
   getAssociatedTokenAddress,
   TOKEN_PROGRAM_ID,
   ASSOCIATED_TOKEN_PROGRAM_ID,
+  createAssociatedTokenAccountInstruction,
+  createSyncNativeInstruction,
 } from "@solana/spl-token";
+import { Transaction } from "@solana/web3.js";
 import { BN } from "@coral-xyz/anchor";
 import {
   ArrowDownToLine,
@@ -49,6 +52,7 @@ interface VaultBalances {
 
 export function VaultPanel() {
   const wallet = useAnchorWallet();
+  const { sendTransaction } = useWallet();
   const { connection } = useConnection();
   const tv = useTradingVault();
   const { toast } = useToast();
@@ -117,8 +121,14 @@ export function VaultPanel() {
     setInfoError(null);
     try {
       const pda = deriveVaultPda(wallet.publicKey);
-      const solLamports = await connection.getBalance(pda);
-      const solBalance = solLamports / LAMPORTS_PER_SOL;
+      let solBalance = 0;
+      try {
+        const wsolAta = await getAssociatedTokenAddress(WSOL_MINT, pda, true);
+        const wsolAcct = await connection.getTokenAccountBalance(wsolAta);
+        solBalance = Number(wsolAcct.value.uiAmount ?? 0);
+      } catch {
+        // WSOL ATA not yet created
+      }
 
       let devUsdcBalance = "0";
       try {
@@ -155,6 +165,50 @@ export function VaultPanel() {
       const pda = deriveVaultPda(wallet.publicKey);
       const userAta = await getAssociatedTokenAddress(mint, wallet.publicKey);
       const vaultAta = await getAssociatedTokenAddress(mint, pda, true);
+
+      // Create missing ATAs and wrap SOL if needed
+      const [userAtaInfo, vaultAtaInfo] = await Promise.all([
+        connection.getAccountInfo(userAta),
+        connection.getAccountInfo(vaultAta),
+      ]);
+      const setupIxs: import("@solana/web3.js").TransactionInstruction[] = [];
+      if (!userAtaInfo) {
+        setupIxs.push(
+          createAssociatedTokenAccountInstruction(wallet.publicKey, userAta, wallet.publicKey, mint)
+        );
+      }
+      if (!vaultAtaInfo) {
+        setupIxs.push(
+          createAssociatedTokenAccountInstruction(wallet.publicKey, vaultAta, pda, mint)
+        );
+      }
+      if (depositMint === "SOL") {
+        setupIxs.push(
+          SystemProgram.transfer({ fromPubkey: wallet.publicKey, toPubkey: userAta, lamports: amountAtomic }),
+          createSyncNativeInstruction(userAta)
+        );
+      }
+      if (setupIxs.length > 0) {
+        const setupTx = new Transaction().add(...setupIxs);
+        const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+        setupTx.recentBlockhash = blockhash;
+        setupTx.feePayer = wallet.publicKey;
+        const setupSig = await sendTransaction(setupTx, connection);
+        await connection.confirmTransaction({ signature: setupSig, blockhash, lastValidBlockHeight }, "confirmed");
+      }
+
+      // Auto-init vault if not yet created
+      const vaultInfo = await connection.getAccountInfo(pda);
+      if (!vaultInfo) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (tv.program as any).methods
+          .initVault(
+            new BN(1_000_000_000), // 1 SOL daily limit
+            100,                   // 1% slippage cap (u16)
+          )
+          .accounts({ user: wallet.publicKey, vault: pda, systemProgram: SystemProgram.programId })
+          .rpc();
+      }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const sig = await (tv.program as any).methods
