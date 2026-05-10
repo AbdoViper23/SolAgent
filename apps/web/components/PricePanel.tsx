@@ -67,8 +67,10 @@ export function PricePanel() {
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between gap-2">
-          <CardTitle className="flex items-center gap-2">
-            <Activity className="h-5 w-5 text-primary" />
+          <CardTitle className="flex items-center gap-2.5 text-lg">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#9945FF]/15 ring-1 ring-[#9945FF]/30">
+              <Activity className="h-4 w-4 text-[#9945FF]" />
+            </div>
             SOL / USD
           </CardTitle>
           {price && !error ? (
@@ -97,22 +99,28 @@ export function PricePanel() {
             <Skeleton className="h-12 w-44" />
           ) : price ? (
             <p
-              className={`font-mono text-4xl font-semibold tabular-nums transition-colors ${
-                pulse ? "text-primary" : "text-foreground"
+              className={`font-mono text-5xl font-black leading-none tabular-nums transition-all duration-300 ${
+                pulse ? "text-[#14F195]" : "text-foreground"
               }`}
             >
-              ${formatAmount(price.price, 4)}
+              ${formatAmount(price.price, 2)}
             </p>
           ) : !error ? (
-            <Skeleton className="h-12 w-44" />
+            <Skeleton className="h-14 w-44" />
           ) : (
-            <p className="font-mono text-4xl font-semibold text-muted-foreground">$—</p>
+            <p className="font-mono text-5xl font-black text-muted-foreground">$—</p>
           )}
 
           {price && (
-            <p className="font-mono text-xs tabular-nums text-muted-foreground">
-              ± ${formatAmount(price.conf, 4)} confidence
-            </p>
+            <div className="space-y-1.5 pt-1">
+              <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                <span className="font-mono">±${formatAmount(price.conf, 4)}</span>
+                <span className="uppercase tracking-wider">confidence</span>
+              </div>
+              <div className="h-px w-full overflow-hidden rounded-full bg-border">
+                <div className="h-full w-[12%] rounded-full bg-gradient-to-r from-[#9945FF] to-[#14F195]" />
+              </div>
+            </div>
           )}
         </div>
 

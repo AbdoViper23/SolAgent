@@ -1,15 +1,16 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Outfit, JetBrains_Mono } from "next/font/google";
 import { Providers } from "./providers";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { Toaster } from "@/components/ui/toaster";
 import "@solana/wallet-adapter-react-ui/styles.css";
 import "./globals.css";
 
-const inter = Inter({
+const outfit = Outfit({
   subsets: ["latin"],
   variable: "--font-sans",
   display: "swap",
+  weight: ["300", "400", "500", "600", "700", "800"],
 });
 
 const jetbrainsMono = JetBrains_Mono({
@@ -30,7 +31,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${jetbrainsMono.variable}`}
+      className={`${outfit.variable} ${jetbrainsMono.variable}`}
       suppressHydrationWarning
     >
       <body className="font-sans antialiased">

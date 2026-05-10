@@ -10,7 +10,9 @@ import {
   LAMPORTS_PER_SOL,
 } from "@solana/web3.js";
 import { getAssociatedTokenAddress } from "@solana/spl-token";
-import { AnchorProvider, Program, BN, Wallet } from "@coral-xyz/anchor";
+import anchorPkg from "@coral-xyz/anchor";
+import type { Program as AnchorProgramType, AnchorProvider as AnchorProviderType } from "@coral-xyz/anchor";
+const { AnchorProvider, Program, BN, Wallet } = anchorPkg;
 import { base58 } from "@scure/base";
 import { createX402Client } from "@workspace/x402-client";
 import { tradingVaultIdl } from "@workspace/idl";
@@ -61,8 +63,8 @@ const PLACEHOLDER_IDL = { ...tradingVaultIdl, address: VAULT_PROGRAM_ID };
 // ── Solana setup ──────────────────────────────────────────────────────────────
 let wallet: Keypair;
 let connection: Connection;
-let provider: AnchorProvider;
-let program: Program;
+let provider: AnchorProviderType;
+let program: AnchorProgramType;
 let programId: PublicKey;
 let http: Awaited<ReturnType<typeof createX402Client>> | null = null;
 

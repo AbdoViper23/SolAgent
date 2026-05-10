@@ -60,9 +60,9 @@ export function Navbar() {
           </div>
           <Badge
             variant="outline"
-            className="ml-1 hidden border-solana-green/30 bg-solana-green/10 font-mono text-[10px] text-solana-green sm:inline-flex"
+            className="ml-1 inline-flex border-amber-500/40 bg-amber-500/15 font-mono text-[10px] uppercase tracking-wider text-amber-400"
           >
-            devnet
+            Devnet
           </Badge>
         </Link>
 
@@ -85,9 +85,9 @@ export function Navbar() {
             <Link
               href="/app"
               className={cn(
-                "text-sm transition-colors",
+                "relative pb-0.5 text-sm font-medium transition-colors",
                 pathname === "/app"
-                  ? "text-foreground font-medium"
+                  ? "text-foreground after:absolute after:inset-x-0 after:-bottom-0.5 after:h-0.5 after:rounded-full after:bg-gradient-to-r after:from-[#9945FF] after:to-[#14F195]"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
@@ -96,9 +96,9 @@ export function Navbar() {
             <Link
               href="/app/history"
               className={cn(
-                "text-sm transition-colors",
+                "relative pb-0.5 text-sm font-medium transition-colors",
                 pathname === "/app/history"
-                  ? "text-foreground font-medium"
+                  ? "text-foreground after:absolute after:inset-x-0 after:-bottom-0.5 after:h-0.5 after:rounded-full after:bg-gradient-to-r after:from-[#9945FF] after:to-[#14F195]"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >

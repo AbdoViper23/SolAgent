@@ -65,7 +65,7 @@ export function Hero() {
               </Button>
               <Button asChild size="lg" variant="ghost" className="font-medium">
                 <a
-                  href="https://github.com"
+                  href="https://github.com/Abdoviper23/SolAgent"
                   target="_blank"
                   rel="noreferrer"
                 >

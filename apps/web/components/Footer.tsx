@@ -33,7 +33,7 @@ export function Footer() {
               on-chain, prices validated against Pyth, swaps routed via Orca.
             </p>
             <a
-              href="https://github.com"
+              href="https://github.com/Abdoviper23/SolAgent"
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-2 text-xs text-muted-foreground transition-colors hover:text-foreground"

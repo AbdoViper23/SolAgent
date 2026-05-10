@@ -336,14 +336,16 @@ export function VaultPanel() {
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between gap-2">
-          <CardTitle className="flex items-center gap-2">
-            <Wallet className="h-5 w-5 text-primary" />
+          <CardTitle className="flex items-center gap-2.5 text-lg">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-solana-gradient shadow-lg ring-1 ring-white/10">
+              <Wallet className="h-4 w-4 text-white" />
+            </div>
             Trading Vault
           </CardTitle>
-          <Badge variant="outline" className="font-mono">devnet</Badge>
+          <Badge variant="outline" className="border-[#9945FF]/30 bg-[#9945FF]/10 font-mono text-[10px] text-[#9945FF]">devnet</Badge>
         </div>
         <CardDescription>
-          Your PDA-derived vault on Solana devnet.
+          PDA-derived vault · self-custodied on Solana devnet
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -364,23 +366,31 @@ export function VaultPanel() {
 
           <Separator />
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">SOL</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="relative overflow-hidden rounded-xl border border-[#9945FF]/20 bg-[#9945FF]/[0.07] p-4">
+              <div className="absolute -right-2 -top-2 h-14 w-14 rounded-full bg-[#9945FF]/25 blur-xl" />
+              <div className="mb-2.5 flex items-center gap-1.5">
+                <div className="flex h-4 w-4 items-center justify-center rounded-full bg-[#9945FF] text-[8px] font-black text-white">◎</div>
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">SOL</span>
+              </div>
               {loadingInfo && !vault ? (
-                <Skeleton className="h-7 w-24" />
+                <Skeleton className="h-8 w-24" />
               ) : (
-                <p className="font-mono text-2xl tabular-nums">
+                <p className="font-mono text-[1.9rem] font-bold leading-none tabular-nums text-[#9945FF]">
                   {vault ? formatAmount(vault.solBalance, 4) : "—"}
                 </p>
               )}
             </div>
-            <div className="space-y-1">
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">devUSDC</p>
+            <div className="relative overflow-hidden rounded-xl border border-[#14F195]/20 bg-[#14F195]/[0.07] p-4">
+              <div className="absolute -right-2 -top-2 h-14 w-14 rounded-full bg-[#14F195]/20 blur-xl" />
+              <div className="mb-2.5 flex items-center gap-1.5">
+                <div className="flex h-4 w-4 items-center justify-center rounded-full bg-[#14F195] text-[8px] font-black text-black">$</div>
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">devUSDC</span>
+              </div>
               {loadingInfo && !vault ? (
-                <Skeleton className="h-7 w-24" />
+                <Skeleton className="h-8 w-24" />
               ) : (
-                <p className="font-mono text-2xl tabular-nums">
+                <p className="font-mono text-[1.9rem] font-bold leading-none tabular-nums text-[#14F195]">
                   {vault ? formatAmount(vault.devUsdcBalance, 2) : "—"}
                 </p>
               )}
@@ -527,6 +537,7 @@ export function VaultPanel() {
               variant="secondary"
               onClick={handleAirdrop}
               disabled={airdropLoading}
+              className="border border-[#9945FF]/25 bg-[#9945FF]/10 font-medium text-[#9945FF] hover:bg-[#9945FF]/20 hover:text-[#9945FF]"
             >
               {airdropLoading ? (
                 <Loader2 className="h-3 w-3 animate-spin" />
@@ -535,7 +546,7 @@ export function VaultPanel() {
               )}
               {airdropLoading ? "Airdropping…" : "+2 SOL"}
             </Button>
-            <Button asChild size="sm" variant="secondary">
+            <Button asChild size="sm" variant="secondary" className="border border-[#14F195]/25 bg-[#14F195]/10 font-medium text-[#14F195] hover:bg-[#14F195]/20 hover:text-[#14F195]">
               <a
                 href="https://everlastingsong.github.io/nebula/"
                 target="_blank"

@@ -149,8 +149,10 @@ export function SwapPanel() {
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between gap-2">
-          <CardTitle className="flex items-center gap-2">
-            <Zap className="h-5 w-5 text-primary" />
+          <CardTitle className="flex items-center gap-2.5 text-lg">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#14F195]/12 ring-1 ring-[#14F195]/30">
+              <Zap className="h-4 w-4 text-[#14F195]" />
+            </div>
             Swap
           </CardTitle>
           <Badge variant="outline">3 routes</Badge>
@@ -285,20 +287,33 @@ export function SwapPanel() {
                   <div
                     key={q.pool}
                     className={cn(
-                      "flex items-center justify-between rounded-md border bg-card/50 px-3 py-2.5 transition-colors",
-                      isBest && "border-success/50 ring-1 ring-success/30"
+                      "flex items-center justify-between rounded-xl border px-3 py-2.5 transition-all",
+                      isBest
+                        ? "border-[#14F195]/35 bg-[#14F195]/[0.06] shadow-[0_0_14px_rgba(20,241,149,0.08)]"
+                        : "border-border/60 bg-card/30 hover:border-border"
                     )}
                   >
                     <div className="flex items-center gap-2">
-                      <Badge variant={isBest ? "success" : "secondary"} className="font-mono">
+                      {isBest && (
+                        <div className="flex h-5 w-5 items-center justify-center rounded-full bg-[#14F195]/20 text-[9px] font-black text-[#14F195]">
+                          1
+                        </div>
+                      )}
+                      <Badge
+                        variant={isBest ? "success" : "secondary"}
+                        className="font-mono text-[11px]"
+                      >
                         {q.label}
                       </Badge>
                       <span className="text-xs text-muted-foreground">Whirlpool</span>
                     </div>
                     <div className="text-right">
-                      <p className="font-mono text-sm tabular-nums">
+                      <p className={cn(
+                        "font-mono text-sm tabular-nums",
+                        isBest && "font-semibold text-[#14F195]"
+                      )}>
                         {formatOut(q.estimatedOut ?? q.estimatedAmountOut)}{" "}
-                        <span className="text-muted-foreground">{outputSymbol}</span>
+                        <span className={isBest ? "text-[#14F195]/60" : "text-muted-foreground"}>{outputSymbol}</span>
                       </p>
                       {q.fee && q.fee !== "0" && (
                         <p className="text-xs text-muted-foreground tabular-nums">

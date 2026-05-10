@@ -184,6 +184,11 @@
   }
 }
 
+::selection {
+  background: rgba(153, 69, 255, 0.25);
+  color: inherit;
+}
+
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;

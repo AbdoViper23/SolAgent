@@ -33,16 +33,27 @@ cp -R "$REPO_ROOT/packages/sdk"          workspace_packages/sdk
 cp -R "$REPO_ROOT/packages/x402-client"  workspace_packages/x402-client
 node -e "
   const fs = require('fs');
-  const p = JSON.parse(fs.readFileSync('package.json','utf8'));
-  for (const k of Object.keys(p.dependencies || {})) {
-    if (p.dependencies[k] === 'workspace:*') {
-      const name = k.replace('@workspace/','');
-      p.dependencies[k] = 'file:./workspace_packages/' + name;
+  const path = require('path');
+  function rewrite(pkgPath, refPrefix) {
+    const p = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+    for (const field of ['dependencies', 'peerDependencies']) {
+      if (!p[field]) continue;
+      for (const k of Object.keys(p[field])) {
+        if (p[field][k] === 'workspace:*') {
+          const name = k.replace('@workspace/', '');
+          p[field][k] = 'file:' + refPrefix + name;
+        }
+      }
     }
+    fs.writeFileSync(pkgPath, JSON.stringify(p, null, 2));
   }
-  fs.writeFileSync('package.json', JSON.stringify(p, null, 2));
+  rewrite('package.json', './workspace_packages/');
+  for (const dir of fs.readdirSync('workspace_packages')) {
+    const inner = path.join('workspace_packages', dir, 'package.json');
+    if (fs.existsSync(inner)) rewrite(inner, '../');
+  }
 "
-npm install --omit=dev --no-audit --no-fund --no-package-lock
+npm install --omit=dev --no-audit --no-fund --no-package-lock --legacy-peer-deps --ignore-scripts
 popd > /dev/null
 
 TARBALL="$STAGE/solana-trading-agent-mcp-${VERSION}.tar.gz"
