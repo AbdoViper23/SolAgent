@@ -375,7 +375,7 @@ export function VoiceWidget() {
 
   return (
     <>
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2">
+      <div data-tour="voice-widget" className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2">
         {isConnected && (
           <div className="rounded-full bg-card/90 backdrop-blur border border-border px-3 py-1.5 text-xs font-medium flex items-center gap-2 shadow-lg">
             {isSpeaking ? (

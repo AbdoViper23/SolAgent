@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Terminal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function CTA() {
@@ -31,6 +31,17 @@ export function CTA() {
               <Link href="/app">
                 Launch App
                 <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
+            <Button
+              asChild
+              size="lg"
+              variant="outline"
+              className="border-[#9945FF]/40 bg-[#9945FF]/5 text-[#9945FF] hover:bg-[#9945FF]/10 hover:text-[#9945FF]"
+            >
+              <Link href="/setup-mcp">
+                <Terminal className="h-4 w-4" />
+                Install MCP
               </Link>
             </Button>
             <Button asChild size="lg" variant="ghost">

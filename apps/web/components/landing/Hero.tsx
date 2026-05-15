@@ -1,15 +1,17 @@
 "use client";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, PlayCircle, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { HeroLiveCard } from "./HeroLiveCard";
 import { GithubIcon } from "@/components/icons/GithubIcon";
+import { useDemoMode } from "@/lib/demo/DemoModeContext";
 
 const SPRING = { type: "spring" as const, stiffness: 120, damping: 18 };
 
 export function Hero() {
+  const { enterDemo } = useDemoMode();
   return (
     <section className="relative overflow-hidden pt-16 pb-20 md:pt-24 md:pb-32">
       <div className="container mx-auto max-w-6xl px-4">
@@ -62,6 +64,16 @@ export function Hero() {
                   Launch App
                   <ArrowRight className="h-4 w-4" />
                 </Link>
+              </Button>
+              <Button
+                type="button"
+                size="lg"
+                variant="outline"
+                onClick={enterDemo}
+                className="border-[#14F195]/40 bg-[#14F195]/5 font-medium text-[#14F195] hover:bg-[#14F195]/10 hover:text-[#14F195]"
+              >
+                <PlayCircle className="h-4 w-4" />
+                Try Demo
               </Button>
               <Button asChild size="lg" variant="ghost" className="font-medium">
                 <a

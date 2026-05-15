@@ -2,12 +2,16 @@
 import { useWallet } from "@solana/wallet-adapter-react";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
-import { ArrowRight, ShieldCheck, Wallet } from "lucide-react";
+import { ArrowRight, PlayCircle, ShieldCheck, Wallet } from "lucide-react";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { useDemoMode } from "@/lib/demo/DemoModeContext";
+import { DemoBanner } from "@/components/onboarding/DemoBanner";
+import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 
 const ConnectButton = dynamic(
   () => import("@/components/ConnectButton").then((m) => m.ConnectButton),
@@ -49,6 +53,8 @@ const itemVariants = {
 
 export default function AppPage() {
   const { connected } = useWallet();
+  const { isDemoMode } = useDemoMode();
+  const showDashboard = connected || isDemoMode;
 
   return (
     <div className="relative flex min-h-screen flex-col">
@@ -58,7 +64,7 @@ export default function AppPage() {
       <Navbar />
 
       <main className="container mx-auto max-w-6xl flex-1 px-4 py-8 md:py-12">
-        {!connected ? (
+        {!showDashboard ? (
           <ConnectPrompt />
         ) : (
           <motion.div
@@ -67,19 +73,32 @@ export default function AppPage() {
             animate="show"
             className="space-y-6"
           >
+            {isDemoMode && (
+              <motion.div variants={itemVariants}>
+                <DemoBanner />
+              </motion.div>
+            )}
             <motion.div variants={itemVariants}>
               <StatusStrip />
             </motion.div>
 
             <div className="grid gap-6 lg:grid-cols-3">
-              <motion.div variants={itemVariants} className="lg:col-span-2">
+              <motion.div
+                variants={itemVariants}
+                className="lg:col-span-2"
+                data-tour="vault-panel"
+              >
                 <VaultPanel />
               </motion.div>
               <motion.div variants={itemVariants} className="space-y-6">
                 <PricePanel />
-                <SwapPanel />
+                <div data-tour="swap-panel">
+                  <SwapPanel />
+                </div>
               </motion.div>
             </div>
+
+            <OnboardingTour />
           </motion.div>
         )}
       </main>
@@ -126,6 +145,7 @@ function StatusStrip() {
 }
 
 function ConnectPrompt() {
+  const { enterDemo } = useDemoMode();
   return (
     <div className="flex min-h-[60vh] items-center justify-center">
       <motion.div
@@ -153,6 +173,20 @@ function ConnectPrompt() {
             <div className="flex justify-center">
               <ConnectButton />
             </div>
+            <div className="relative flex items-center justify-center gap-3 pt-1">
+              <span className="h-px w-12 bg-border/50" />
+              <span className="text-[10px] uppercase tracking-widest text-muted-foreground">or</span>
+              <span className="h-px w-12 bg-border/50" />
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={enterDemo}
+              className="w-full border-[#14F195]/40 bg-[#14F195]/5 font-medium text-[#14F195] hover:bg-[#14F195]/10 hover:text-[#14F195]"
+            >
+              <PlayCircle className="h-4 w-4" />
+              Try Demo · No wallet needed
+            </Button>
             <div className="flex items-center justify-center gap-2 border-t border-border/40 pt-4 text-[11px] text-muted-foreground">
               <ShieldCheck className="h-3.5 w-3.5 text-[#14F195]" />
               <span>Self-custodied · You hold the keys</span>

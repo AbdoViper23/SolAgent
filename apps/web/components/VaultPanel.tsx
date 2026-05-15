@@ -24,6 +24,8 @@ import {
 import axios from "axios";
 import { useTradingVault } from "@/lib/useTradingVault";
 import { recordDeposit } from "@/lib/db";
+import { useDemoMode } from "@/lib/demo/DemoModeContext";
+import { mockActions, useMockVault, MOCK_VAULT_ADDRESS } from "@/lib/demo/mockVaultStore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,6 +56,8 @@ export function VaultPanel() {
   const { connection } = useConnection();
   const tv = useTradingVault();
   const { toast } = useToast();
+  const { isDemoMode } = useDemoMode();
+  const mock = useMockVault();
 
   const [vault, setVault] = useState<VaultBalances | null>(null);
   const [loadingInfo, setLoadingInfo] = useState(false);
@@ -70,7 +74,7 @@ export function VaultPanel() {
   const [airdropLoading, setAirdropLoading] = useState(false);
 
   // Pre-deploy state: program ID is the placeholder, can't construct PublicKey safely
-  if (tv && !tv.programId) {
+  if (!isDemoMode && tv && !tv.programId) {
     return (
       <Card>
         <CardHeader>
@@ -146,15 +150,52 @@ export function VaultPanel() {
   }, [wallet, connection, deriveVaultPda, tv?.programId]);
 
   useEffect(() => {
+    if (isDemoMode) return;
     void fetchVaultInfo();
-  }, [fetchVaultInfo]);
+  }, [fetchVaultInfo, isDemoMode]);
+
+  const displayVault = isDemoMode
+    ? {
+        pdaStr: MOCK_VAULT_ADDRESS,
+        solBalance: mock.vaultSolBalance,
+        devUsdcBalance: mock.vaultUsdcBalance.toFixed(2),
+      }
+    : vault
+      ? {
+          pdaStr: vault.pda.toBase58(),
+          solBalance: vault.solBalance,
+          devUsdcBalance: vault.devUsdcBalance,
+        }
+      : null;
+  const isLoadingVault = !isDemoMode && loadingInfo && !vault;
 
   const handleDeposit = async () => {
-    if (!wallet || !tv?.program) return;
     if (!depositAmount || Number(depositAmount) <= 0) {
       toast({ title: "Enter an amount", variant: "destructive" });
       return;
     }
+    if (isDemoMode) {
+      setDepositLoading(true);
+      try {
+        await mockActions.deposit(depositMint, Number(depositAmount));
+        toast({
+          title: "Deposit confirmed (demo)",
+          description: `${depositAmount} ${depositMint} moved into your demo vault.`,
+          variant: "success",
+        });
+        setDepositAmount("");
+      } catch (e) {
+        toast({
+          title: "Deposit failed",
+          description: e instanceof Error ? e.message : "Unknown error",
+          variant: "destructive",
+        });
+      } finally {
+        setDepositLoading(false);
+      }
+      return;
+    }
+    if (!wallet || !tv?.program) return;
     setDepositLoading(true);
     try {
       const mint = depositMint === "SOL" ? WSOL_MINT : DEV_USDC_MINT;
@@ -263,11 +304,32 @@ export function VaultPanel() {
   };
 
   const handleWithdraw = async () => {
-    if (!wallet || !tv?.program) return;
     if (!withdrawAmount || Number(withdrawAmount) <= 0) {
       toast({ title: "Enter an amount", variant: "destructive" });
       return;
     }
+    if (isDemoMode) {
+      setWithdrawLoading(true);
+      try {
+        await mockActions.withdraw(withdrawMint, Number(withdrawAmount));
+        toast({
+          title: "Withdraw confirmed (demo)",
+          description: `${withdrawAmount} ${withdrawMint} returned to your wallet.`,
+          variant: "success",
+        });
+        setWithdrawAmount("");
+      } catch (e) {
+        toast({
+          title: "Withdraw failed",
+          description: e instanceof Error ? e.message : "Unknown error",
+          variant: "destructive",
+        });
+      } finally {
+        setWithdrawLoading(false);
+      }
+      return;
+    }
+    if (!wallet || !tv?.program) return;
     setWithdrawLoading(true);
     try {
       const mint = withdrawMint === "SOL" ? WSOL_MINT : DEV_USDC_MINT;
@@ -320,6 +382,13 @@ export function VaultPanel() {
   };
 
   const handleAirdrop = async () => {
+    if (isDemoMode) {
+      toast({
+        title: "Demo airdrop",
+        description: "Demo mode starts with 5 SOL + 1,250 devUSDC already.",
+      });
+      return;
+    }
     if (!wallet) return;
     setAirdropLoading(true);
     try {
@@ -346,6 +415,14 @@ export function VaultPanel() {
   };
 
   const setMaxDeposit = async () => {
+    if (isDemoMode) {
+      setDepositAmount(
+        depositMint === "SOL"
+          ? mock.walletSolBalance.toFixed(4)
+          : mock.walletUsdcBalance.toFixed(2),
+      );
+      return;
+    }
     if (!wallet) return;
     if (depositMint === "SOL") {
       const lamports = await connection.getBalance(wallet.publicKey);
@@ -364,6 +441,14 @@ export function VaultPanel() {
   };
 
   const setMaxWithdraw = () => {
+    if (isDemoMode) {
+      setWithdrawAmount(
+        withdrawMint === "SOL"
+          ? mock.vaultSolBalance.toFixed(4)
+          : mock.vaultUsdcBalance.toFixed(2),
+      );
+      return;
+    }
     if (!vault) return;
     if (withdrawMint === "SOL") {
       setWithdrawAmount(vault.solBalance.toFixed(4));
@@ -395,10 +480,10 @@ export function VaultPanel() {
             <Label className="text-xs uppercase tracking-wider text-muted-foreground">
               Vault address
             </Label>
-            {loadingInfo && !vault ? (
+            {isLoadingVault ? (
               <Skeleton className="h-6 w-32" />
-            ) : vault ? (
-              <AddressBadge address={vault.pda.toBase58()} />
+            ) : displayVault ? (
+              <AddressBadge address={displayVault.pdaStr} />
             ) : (
               <span className="text-xs text-muted-foreground">—</span>
             )}
@@ -413,11 +498,11 @@ export function VaultPanel() {
                 <div className="flex h-4 w-4 items-center justify-center rounded-full bg-[#9945FF] text-[8px] font-black text-white">◎</div>
                 <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">SOL</span>
               </div>
-              {loadingInfo && !vault ? (
+              {isLoadingVault ? (
                 <Skeleton className="h-8 w-24" />
               ) : (
                 <p className="font-mono text-[1.9rem] font-bold leading-none tabular-nums text-[#9945FF]">
-                  {vault ? formatAmount(vault.solBalance, 4) : "—"}
+                  {displayVault ? formatAmount(displayVault.solBalance, 4) : "—"}
                 </p>
               )}
             </div>
@@ -427,11 +512,11 @@ export function VaultPanel() {
                 <div className="flex h-4 w-4 items-center justify-center rounded-full bg-[#14F195] text-[8px] font-black text-black">$</div>
                 <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">devUSDC</span>
               </div>
-              {loadingInfo && !vault ? (
+              {isLoadingVault ? (
                 <Skeleton className="h-8 w-24" />
               ) : (
                 <p className="font-mono text-[1.9rem] font-bold leading-none tabular-nums text-[#14F195]">
-                  {vault ? formatAmount(vault.devUsdcBalance, 2) : "—"}
+                  {displayVault ? formatAmount(displayVault.devUsdcBalance, 2) : "—"}
                 </p>
               )}
             </div>

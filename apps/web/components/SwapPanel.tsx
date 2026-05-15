@@ -23,8 +23,19 @@ import { useToast } from "@/lib/use-toast";
 import { cn, formatAmount } from "@/lib/utils";
 import { TokenPicker } from "@/components/TokenPicker";
 import { CRYPTO_TOKENS } from "@/lib/tokens";
+import { useDemoMode } from "@/lib/demo/DemoModeContext";
+import { mockActions } from "@/lib/demo/mockVaultStore";
 
 const SWAP_ANALYZER_URL = process.env.NEXT_PUBLIC_SWAP_ANALYZER_URL ?? "";
+
+// Demo-only price approximations. Production uses real oracle quotes.
+const DEMO_RATES: Record<string, number> = {
+  "SOL>USDC": 165,
+  "USDC>SOL": 1 / 165,
+};
+function demoRate(from: string, to: string): number {
+  return DEMO_RATES[`${from}>${to}`] ?? 1;
+}
 
 interface PoolQuote {
   pool: string;
@@ -39,6 +50,7 @@ interface PoolQuote {
 export function SwapPanel() {
   const wallet = useAnchorWallet();
   const { toast } = useToast();
+  const { isDemoMode } = useDemoMode();
 
   const [amountIn, setAmountIn] = useState("");
   const [slippage, setSlippage] = useState("0.5");
@@ -93,6 +105,24 @@ export function SwapPanel() {
     setQuotes([]);
     setBestPool(null);
 
+    if (isDemoMode) {
+      // Synthesize plausible-looking quotes across three tick spacings.
+      const rate = demoRate(inputSymbol, outputSymbol);
+      const baseOut = Number(amountIn) * rate;
+      const rawOut = Math.floor(baseOut * 10 ** outputDecimals);
+      const variations: PoolQuote[] = [
+        { pool: "demo-ts64", label: "ts64", tickSpacing: 64, estimatedOut: String(Math.floor(rawOut * 1.000)) },
+        { pool: "demo-ts128", label: "ts128", tickSpacing: 128, estimatedOut: String(Math.floor(rawOut * 0.998)) },
+        { pool: "demo-ts32", label: "ts32", tickSpacing: 32, estimatedOut: String(Math.floor(rawOut * 0.994)) },
+      ];
+      // Pretend the network exists.
+      await new Promise((r) => setTimeout(r, 300));
+      setQuotes(variations);
+      setBestPool("demo-ts64");
+      setQuotesLoading(false);
+      return;
+    }
+
     try {
       const rawAmount = Math.floor(Number(amountIn) * 10 ** inputDecimals).toString();
 
@@ -130,15 +160,45 @@ export function SwapPanel() {
     } finally {
       setQuotesLoading(false);
     }
-  }, [amountIn, inputDecimals, inputMint, outputMint, inputSymbol, outputSymbol, toast]);
+  }, [amountIn, inputDecimals, inputMint, outputMint, inputSymbol, outputSymbol, outputDecimals, toast, isDemoMode]);
 
-  const handleSwap = () => {
+  const handleSwap = async () => {
+    if (isDemoMode) {
+      // Only SOL/devUSDC pair is meaningful in demo (the vault tracks only these).
+      const from = inputSymbol === "SOL" ? "SOL" : "devUSDC";
+      const to = outputSymbol === "SOL" ? "SOL" : "devUSDC";
+      if (from === to) {
+        toast({ title: "Pick different tokens", variant: "destructive" });
+        return;
+      }
+      try {
+        const rate = demoRate(inputSymbol, outputSymbol);
+        const out = await mockActions.swap(from, to, Number(amountIn), rate);
+        toast({
+          title: "Swap confirmed (demo)",
+          description: `Received ${out.toFixed(to === "SOL" ? 4 : 2)} ${to}.`,
+          variant: "success",
+        });
+        setAmountIn("");
+        setQuotes([]);
+        setBestPool(null);
+      } catch (e) {
+        toast({
+          title: "Swap failed",
+          description: e instanceof Error ? e.message : "Unknown error",
+          variant: "destructive",
+        });
+      }
+      return;
+    }
     toast({
       title: "On-chain swap pending",
       description:
         "execute_swap CPI needs Orca tick-array PDAs wired in. Use the MCP for now or wait for the next iteration.",
     });
   };
+
+
 
   const formatOut = (raw?: string) => {
     if (!raw || raw === "—" || raw === "0") return raw ?? "—";
@@ -241,7 +301,7 @@ export function SwapPanel() {
 
         <Button
           onClick={fetchQuotes}
-          disabled={quotesLoading || !wallet}
+          disabled={quotesLoading || (!wallet && !isDemoMode)}
           variant="secondary"
           className="w-full"
         >
@@ -334,7 +394,7 @@ export function SwapPanel() {
           </>
         )}
 
-        <Button onClick={handleSwap} disabled={!bestPool || !wallet} className="w-full">
+        <Button onClick={handleSwap} disabled={!bestPool || (!wallet && !isDemoMode)} className="w-full">
           <ChevronRight className="h-4 w-4" />
           Execute Swap
         </Button>

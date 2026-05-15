@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { ConnectionProvider, WalletProvider } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import { clusterApiUrl } from "@solana/web3.js";
+import { DemoModeProvider } from "@/lib/demo/DemoModeContext";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const endpoint = useMemo(
@@ -16,7 +17,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <ConnectionProvider endpoint={endpoint} config={connectionConfig}>
       <WalletProvider wallets={[]} autoConnect>
-        <WalletModalProvider>{children}</WalletModalProvider>
+        <WalletModalProvider>
+          <DemoModeProvider>{children}</DemoModeProvider>
+        </WalletModalProvider>
       </WalletProvider>
     </ConnectionProvider>
   );
