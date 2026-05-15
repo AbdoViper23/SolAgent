@@ -9,8 +9,9 @@
   },
   "dependencies": {
     "@workspace/sdk": "workspace:*",
-    "@x402/express": "latest",
-    "@x402/svm": ">=2.6.0",
+    "@x402/express": "~2.1.0",
+    "@x402/svm": "~2.1.0",
+    "@x402/core": "~2.1.0",
     "express": "^4.21.0",
     "express-rate-limit": "^7.4.0",
     "axios": "^1.13.0",

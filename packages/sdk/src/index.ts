@@ -12,6 +12,7 @@ import {
 } from "@coral-xyz/anchor";
 import {
   getAssociatedTokenAddressSync,
+  createAssociatedTokenAccountIdempotentInstruction,
   TOKEN_PROGRAM_ID,
   TOKEN_2022_PROGRAM_ID,
   ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -22,7 +23,12 @@ import {
   fetchWhirlpoolsByTokenPair,
   swapInstructions,
 } from "@orca-so/whirlpools";
-import { address } from "@solana/kit";
+import {
+  fetchWhirlpool,
+  getOracleAddress,
+  getTickArrayAddress,
+} from "@orca-so/whirlpools-client";
+import { address, createSolanaRpc } from "@solana/kit";
 import { tradingVaultIdl } from "@workspace/idl";
 import type { TradingVault } from "@workspace/idl";
 
@@ -155,6 +161,8 @@ export async function withdrawTx(
 
 export type ExecuteSwapParams = {
   whirlpool: PublicKey;
+  tokenMintA: PublicKey;
+  tokenMintB: PublicKey;
   tokenOwnerAccountA: PublicKey;
   tokenVaultA: PublicKey;
   tokenOwnerAccountB: PublicKey;
@@ -176,6 +184,23 @@ export async function executeSwapTx(
   const user = (program.provider as AnchorProvider).wallet.publicKey;
   const [vaultPda] = getVaultPda(program.programId, user);
   const whirlpoolProgramId = new PublicKey(WHIRLPOOL_PROGRAM_ID);
+
+  const preIxs = [
+    createAssociatedTokenAccountIdempotentInstruction(
+      user,
+      params.tokenOwnerAccountA,
+      vaultPda,
+      params.tokenMintA,
+      TOKEN_PROGRAM_ID
+    ),
+    createAssociatedTokenAccountIdempotentInstruction(
+      user,
+      params.tokenOwnerAccountB,
+      vaultPda,
+      params.tokenMintB,
+      TOKEN_PROGRAM_ID
+    ),
+  ];
 
   const tx = await program.methods
     .executeSwap(
@@ -200,6 +225,7 @@ export async function executeSwapTx(
       tokenProgram: TOKEN_PROGRAM_ID,
       whirlpoolProgram: whirlpoolProgramId,
     })
+    .preInstructions(preIxs)
     .rpc();
 
   return tx;
@@ -264,6 +290,103 @@ export async function getBestSwapQuote(
   }
 
   return best;
+}
+
+// ─── prepareSwapAccounts ─────────────────────────────────────────────────────
+
+const TICK_ARRAY_SIZE = 88;
+
+function getStartTickIndex(tickIndex: number, tickSpacing: number): number {
+  const stride = tickSpacing * TICK_ARRAY_SIZE;
+  return Math.floor(tickIndex / stride) * stride;
+}
+
+export type PrepareSwapInput = {
+  connection: Connection;
+  vault: PublicKey;
+  inputMint: PublicKey;
+  outputMint: PublicKey;
+  amountIn: bigint;
+  slippageBps: number;
+  poolAddress: PublicKey;
+};
+
+export async function prepareSwapAccounts(
+  input: PrepareSwapInput
+): Promise<ExecuteSwapParams> {
+  const { connection, vault, inputMint, amountIn, slippageBps, poolAddress } = input;
+
+  await setWhirlpoolsConfig("solanaDevnet");
+  await setRpc(connection.rpcEndpoint);
+
+  const kitRpc = createSolanaRpc(connection.rpcEndpoint);
+  const poolAddr = address(poolAddress.toBase58());
+  const inputMintAddr = address(inputMint.toBase58());
+
+  const whirlpoolAccount = await fetchWhirlpool(kitRpc, poolAddr);
+  const data = whirlpoolAccount.data;
+  const tokenMintA = new PublicKey(data.tokenMintA);
+  const tokenMintB = new PublicKey(data.tokenMintB);
+  const tokenVaultA = new PublicKey(data.tokenVaultA);
+  const tokenVaultB = new PublicKey(data.tokenVaultB);
+
+  const aToB = inputMint.equals(tokenMintA);
+
+  const start0 = getStartTickIndex(data.tickCurrentIndex, data.tickSpacing);
+  const stride = data.tickSpacing * TICK_ARRAY_SIZE;
+  const offsets = aToB ? [0, -stride, -2 * stride] : [0, stride, 2 * stride];
+  const tickArrayPdas = await Promise.all(
+    offsets.map((off) => getTickArrayAddress(poolAddr, start0 + off))
+  );
+  const [tickArray0, tickArray1, tickArray2] = tickArrayPdas.map(
+    ([addr]) => new PublicKey(addr)
+  );
+
+  const [oracleAddrTuple] = [await getOracleAddress(poolAddr)];
+  const oracle = new PublicKey(oracleAddrTuple[0]);
+
+  const tokenOwnerAccountA = getAssociatedTokenAddressSync(
+    tokenMintA,
+    vault,
+    true,
+    TOKEN_PROGRAM_ID
+  );
+  const tokenOwnerAccountB = getAssociatedTokenAddressSync(
+    tokenMintB,
+    vault,
+    true,
+    TOKEN_PROGRAM_ID
+  );
+
+  // Quote via SDK; the SDK already applies slippage to tokenMinOut.
+  const { quote } = await swapInstructions(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    kitRpc as any,
+    { inputAmount: amountIn, mint: inputMintAddr },
+    poolAddr,
+    slippageBps
+  );
+  const minAmountOut = BigInt(
+    (quote as { tokenMinOut: { toString: () => string } }).tokenMinOut.toString()
+  );
+
+  return {
+    whirlpool: poolAddress,
+    tokenMintA,
+    tokenMintB,
+    tokenOwnerAccountA,
+    tokenVaultA,
+    tokenOwnerAccountB,
+    tokenVaultB,
+    tickArray0,
+    tickArray1,
+    tickArray2,
+    oracle,
+    amountIn,
+    minAmountOut,
+    aToB,
+    sqrtPriceLimit: 0n,
+  };
 }
 
 // ─── getVaultBalance ─────────────────────────────────────────────────────────

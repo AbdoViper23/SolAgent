@@ -24,6 +24,7 @@ import {
   CRYPTO_SYMBOLS,
   EQUITY_SYMBOLS,
 } from "@workspace/sdk/tokens";
+import { prepareSwapAccounts, executeSwapTx } from "@workspace/sdk";
 import WebSocket from "ws";
 
 // Accepts either a registered symbol ("SOL", "SAMO", "PYUSD") or a base58 mint
@@ -307,30 +308,59 @@ server.registerTool(
     inputSchema: {
       whirlpoolAddress: z.string().describe("Whirlpool pool address to swap through"),
       amountIn: z.string().describe("Input amount in smallest unit"),
-      minAmountOut: z.string().describe("Minimum acceptable output amount"),
-      aToB: z.boolean().describe("Direction: true = tokenA→tokenB, false = tokenB→tokenA"),
+      inputMint: z
+        .string()
+        .optional()
+        .describe("Input mint (symbol or address). Defaults to WSOL."),
+      outputMint: z
+        .string()
+        .optional()
+        .describe("Output mint (symbol or address). Defaults to devnet USDC."),
+      slippageBps: z
+        .number()
+        .int()
+        .optional()
+        .describe("Slippage tolerance in bps (default 100 = 1%)"),
+      minAmountOut: z
+        .string()
+        .optional()
+        .describe("Override min_amount_out (smallest unit). Defaults to quote-derived value."),
     },
   },
-  async ({ whirlpoolAddress, amountIn, minAmountOut, aToB }) => {
+  async ({ whirlpoolAddress, amountIn, inputMint, outputMint, slippageBps, minAmountOut }) => {
     const [vaultPda] = deriveVaultPda(wallet.publicKey);
-    const whirlpool = new PublicKey(whirlpoolAddress);
+    const inputMintPk = new PublicKey(inputMint ? resolveMint(inputMint) : WSOL_MINT);
+    const outputMintPk = new PublicKey(outputMint ? resolveMint(outputMint) : DEV_USDC_SWAP);
 
-    const tx = await program.methods
-      .executeSwap(new BN(amountIn), new BN(minAmountOut), aToB)
-      .accounts({
-        vault: vaultPda,
-        user: wallet.publicKey,
-        whirlpool,
-        whirlpoolProgram: WHIRLPOOLS_PROGRAM,
-      })
-      .rpc();
+    const params = await prepareSwapAccounts({
+      connection,
+      vault: vaultPda,
+      inputMint: inputMintPk,
+      outputMint: outputMintPk,
+      amountIn: BigInt(amountIn),
+      slippageBps: slippageBps ?? 100,
+      poolAddress: new PublicKey(whirlpoolAddress),
+    });
+
+    if (minAmountOut) {
+      params.minAmountOut = BigInt(minAmountOut);
+    }
+
+    const tx = await executeSwapTx(program, params);
 
     return {
       content: [
         {
           type: "text" as const,
           text: JSON.stringify(
-            { success: true, txSignature: tx, whirlpoolAddress, amountIn, minAmountOut, aToB },
+            {
+              success: true,
+              txSignature: tx,
+              whirlpoolAddress,
+              amountIn,
+              minAmountOut: params.minAmountOut.toString(),
+              aToB: params.aToB,
+            },
             null,
             2
           ),

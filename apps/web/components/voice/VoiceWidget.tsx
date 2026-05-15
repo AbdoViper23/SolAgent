@@ -16,6 +16,11 @@ import { useTradingVault, getVaultPda } from "@/lib/useTradingVault";
 import { recordDeposit } from "@/lib/db";
 import { useToast } from "@/lib/use-toast";
 import { ConfirmTxModal, type Proposal } from "./ConfirmTxModal";
+import {
+  prepareSwapAccounts,
+  executeSwapTx,
+  DEVNET_SOL_USDC_POOL_64,
+} from "@workspace/sdk";
 
 const ORACLE_URL = process.env.NEXT_PUBLIC_ORACLE_SERVICE_URL ?? "";
 const SWAP_ANALYZER_URL = process.env.NEXT_PUBLIC_SWAP_ANALYZER_URL ?? "";
@@ -330,12 +335,35 @@ export function VoiceWidget() {
         });
         pending.resolve({ success: true, txSignature: sig });
       } else {
-        // swap: on-chain CPI not yet wired; surface that honestly to the agent.
+        const inT = lookupToken(p.inputSymbol);
+        const outT = lookupToken(p.outputSymbol);
+        const amountAtomic = BigInt(
+          Math.floor(Number(p.amountIn) * 10 ** inT.decimals)
+        );
+        const [pda] = getVaultPda(tv.programId, publicKey);
+        const poolAddress = new PublicKey(p.bestPool ?? DEVNET_SOL_USDC_POOL_64);
+
+        const params = await prepareSwapAccounts({
+          connection,
+          vault: pda,
+          inputMint: inT.mint,
+          outputMint: outT.mint,
+          amountIn: amountAtomic,
+          slippageBps: 100,
+          poolAddress,
+        });
+
+        const sig = await executeSwapTx(tv.program, params);
+
+        toast({
+          title: `Swapped ${p.amountIn} ${p.inputSymbol} → ${p.outputSymbol}`,
+          variant: "success",
+        });
         pending.resolve({
-          success: false,
-          reason: "swap_not_executable",
-          detail:
-            "On-chain swap CPI is not yet wired up in this build. The quote was fetched but the trade was not signed. Try deposit or withdraw flows.",
+          success: true,
+          txSignature: sig,
+          minAmountOut: params.minAmountOut.toString(),
+          aToB: params.aToB,
         });
       }
     } catch (e) {

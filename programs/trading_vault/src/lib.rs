@@ -115,9 +115,20 @@ pub mod trading_vault {
             TradingVaultError::DailyLimitExceeded
         );
 
-        // Validate slippage: ensure min_amount_out is not too tight
-        // (caller is responsible; we just enforce the cap exists)
-        let _ = vault.slippage_bps_cap; // used in off-chain quoting
+        let bps_cap = vault.slippage_bps_cap as u128;
+        require!(bps_cap <= 10_000, TradingVaultError::SlippageTooTight);
+        let slippage_floor = (amount_in as u128)
+            .checked_mul(
+                10_000u128
+                    .checked_sub(bps_cap)
+                    .ok_or(TradingVaultError::Overflow)?,
+            )
+            .ok_or(TradingVaultError::Overflow)?
+            / 10_000u128;
+        require!(
+            (min_amount_out as u128) >= slippage_floor,
+            TradingVaultError::SlippageTooTight
+        );
 
         vault.daily_spent = new_spent;
 

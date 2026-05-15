@@ -11,6 +11,7 @@ import {
   type CryptoToken,
   type EquityTicker,
 } from "@workspace/sdk/tokens";
+import { buildPricePaymentMiddleware } from "./x402.js";
 
 const app = express();
 app.use(express.json());
@@ -22,13 +23,28 @@ const FACILITATOR_URL = process.env.FACILITATOR_URL ?? "https://facilitator.paya
 const HERMES_URL = "https://hermes.pyth.network/v2/updates/price/latest";
 const CACHE_TTL_MS = Number(process.env.CACHE_TTL_MS ?? 2000);
 const STALE_THRESHOLD_S = Number(process.env.STALE_THRESHOLD_S ?? 60);
+const X402_ENABLED = process.env.X402_ENABLED === "true";
+const PRICE_SOL_USD_ATOMIC = process.env.PRICE_SOL_USD_ATOMIC ?? "1000";
 
 if (!MERCHANT) {
   console.error("MERCHANT_ADDRESS env var required");
   process.exit(1);
 }
 
-console.log(`[x402 disabled] merchant=${MERCHANT} facilitator=${FACILITATOR_URL}`);
+if (X402_ENABLED) {
+  const pricePayment = buildPricePaymentMiddleware({
+    merchantAddress: MERCHANT,
+    facilitatorUrl: FACILITATOR_URL,
+    priceAtomicUnits: PRICE_SOL_USD_ATOMIC,
+    routePath: "/price/sol-usd",
+  });
+  app.use(pricePayment);
+  console.log(
+    `[x402 enabled] /price/sol-usd merchant=${MERCHANT} price=${PRICE_SOL_USD_ATOMIC} atomic`
+  );
+} else {
+  console.log(`[x402 disabled] merchant=${MERCHANT} facilitator=${FACILITATOR_URL}`);
+}
 
 interface PriceQuote {
   symbol: string;

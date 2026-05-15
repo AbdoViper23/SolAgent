@@ -504,5 +504,52 @@ describe("trading_vault", () => {
         .signers([authority])
         .rpc();
     });
+
+    it("rejects swap when min_amount_out implies tighter slippage than cap", async () => {
+      const fakePool = Keypair.generate().publicKey;
+      const fakeTickArray = Keypair.generate().publicKey;
+      const fakeOracle = Keypair.generate().publicKey;
+      const whirlpoolProgramId = new PublicKey(
+        "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
+      );
+
+      await program.methods
+        .addWhitelistPool(fakePool)
+        .accounts({
+          user: authority.publicKey,
+          vault: vaultPda,
+          authority: authority.publicKey,
+        })
+        .signers([authority])
+        .rpc();
+
+      // SLIPPAGE_BPS = 100 (1%), so floor = amount_in * 99 / 100 = 990_000.
+      // min_amount_out = 900_000 is below floor → SlippageTooTight.
+      try {
+        await program.methods
+          .executeSwap(new BN(1_000_000), new BN(900_000), true, new BN(0))
+          .accounts({
+            user: authority.publicKey,
+            vault: vaultPda,
+            authority: authority.publicKey,
+            whirlpool: fakePool,
+            tokenOwnerAccountA: userAta,
+            tokenVaultA: fakePool,
+            tokenOwnerAccountB: userAta,
+            tokenVaultB: fakePool,
+            tickArray0: fakeTickArray,
+            tickArray1: fakeTickArray,
+            tickArray2: fakeTickArray,
+            oracle: fakeOracle,
+            tokenProgram: TOKEN_PROGRAM_ID,
+            whirlpoolProgram: whirlpoolProgramId,
+          })
+          .signers([authority])
+          .rpc();
+        expect.fail("Should have thrown SlippageTooTight error");
+      } catch (err: any) {
+        expect(err.toString()).to.include("SlippageTooTight");
+      }
+    });
   });
 });
