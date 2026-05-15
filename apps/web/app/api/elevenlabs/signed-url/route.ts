@@ -9,6 +9,9 @@ const buckets = new Map<string, { count: number; resetAt: number }>();
 
 function rateLimit(ip: string): boolean {
   const now = Date.now();
+  for (const [key, val] of buckets) {
+    if (now > val.resetAt) buckets.delete(key);
+  }
   const bucket = buckets.get(ip);
   if (!bucket || now > bucket.resetAt) {
     buckets.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });

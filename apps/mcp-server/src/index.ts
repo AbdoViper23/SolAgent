@@ -16,6 +16,7 @@ const { AnchorProvider, Program, BN, Wallet } = anchorPkg;
 import { base58 } from "@scure/base";
 import { createX402Client } from "@workspace/x402-client";
 import { tradingVaultIdl } from "@workspace/idl";
+import type { TradingVault } from "@workspace/idl";
 import {
   resolveCryptoInput,
   getEquityTicker,
@@ -65,7 +66,7 @@ const PLACEHOLDER_IDL = { ...tradingVaultIdl, address: VAULT_PROGRAM_ID };
 let wallet: Keypair;
 let connection: Connection;
 let provider: AnchorProviderType;
-let program: AnchorProgramType;
+let program: AnchorProgramType<TradingVault>;
 let programId: PublicKey;
 let http: Awaited<ReturnType<typeof createX402Client>> | null = null;
 
@@ -85,8 +86,7 @@ function init() {
     preflightCommitment: "confirmed",
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  program = new Program(PLACEHOLDER_IDL as any, provider);
+  program = new Program<TradingVault>(PLACEHOLDER_IDL as TradingVault, provider);
 }
 
 async function initX402() {
@@ -178,8 +178,7 @@ server.registerTool(
     const { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } = await import("@solana/spl-token");
     const { SystemProgram } = await import("@solana/web3.js");
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const tx = await (program as any).methods
+    const tx = await program.methods
       .deposit(new BN(amount))
       .accounts({
         user: wallet.publicKey,
@@ -222,8 +221,7 @@ server.registerTool(
     const vaultAta = await getAssociatedTokenAddress(mintPubkey, vaultPda, true);
     const { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } = await import("@solana/spl-token");
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const tx = await (program as any).methods
+    const tx = await program.methods
       .withdraw(new BN(amount))
       .accounts({
         user: wallet.publicKey,
@@ -809,8 +807,7 @@ server.registerTool(
   async ({ dailyLimitLamports, slippageBps }) => {
     const [vaultPda] = deriveVaultPda(wallet.publicKey);
     const { SystemProgram } = await import("@solana/web3.js");
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const tx = await (program as any).methods
+    const tx = await program.methods
       .initVault(new BN(dailyLimitLamports), slippageBps)
       .accounts({
         user: wallet.publicKey,
